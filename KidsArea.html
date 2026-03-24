@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الكيدز إريا</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937;
+            --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; margin: 0; padding: 15px; padding-bottom: 80px; }
+        header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid var(--primary); padding-bottom: 10px; }
+        header h1 { margin: 0; color: var(--primary); font-weight: 900; }
+        
+        .add-section { background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group input { width: 100%; padding: 15px; border-radius: 10px; border: 2px solid #d1d5db; font-size: 18px; font-family: inherit; font-weight: bold; box-sizing: border-box; text-align: center; }
+        .input-group input:focus { outline: none; border-color: var(--primary); }
+        
+        .btn-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 15px 10px; border: none; border-radius: 10px; font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-15 { background-color: var(--primary); }
+        .btn-60 { background-color: var(--success); }
+        
+        .kids-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        
+        .kid-card { padding: 15px; border-radius: 12px; color: white; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.3s; }
+        .kid-name { font-size: 22px; font-weight: 900; margin: 0 0 10px 0; border-bottom: 1px dashed rgba(255,255,255,0.5); padding-bottom: 5px; }
+        .kid-time { font-size: 32px; font-weight: 900; text-align: center; margin: 10px 0; direction: ltr; }
+        .kid-end { font-size: 14px; text-align: center; margin-bottom: 15px; opacity: 0.9; }
+        
+        .btn-remove { background: rgba(0,0,0,0.3); color: white; border: none; padding: 12px; border-radius: 8px; font-family: inherit; font-weight: bold; font-size: 15px; cursor: pointer; width: 100%; }
+        .btn-remove:hover { background: rgba(0,0,0,0.5); }
+
+        /* ألوان الحالات */
+        .state-good { background-color: var(--success); }
+        .state-warning { background-color: var(--warning); color: #000; }
+        .state-warning .btn-remove { background: rgba(0,0,0,0.1); color: #000; }
+        .state-danger { background-color: var(--danger); animation: blink 1.5s infinite; }
+        
+        @keyframes blink {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .clear-all-btn { display: block; width: 100%; max-width: 300px; margin: 30px auto 0; background: transparent; border: 2px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 10px; font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧸 الكيدز إريا</h1>
+    </header>
+
+    <div class="add-section">
+        <div class="input-group">
+            <input type="text" id="childNameInput" placeholder="اكتب اسم الطفل هنا..." onkeypress="handleEnter(event)">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-15" onclick="addChild(15)">تذكرة 30 ج<br>(15 دقيقة)</button>
+            <button class="btn btn-60" onclick="addChild(60)">تذكرة 50 ج<br>(ساعة كاملة)</button>
+        </div>
+    </div>
+
+    <div class="kids-grid" id="kidsContainer">
+        </div>
+
+    <button class="clear-all-btn" onclick="clearAllKids()">🗑️ مسح جميع الأطفال (نهاية اليوم)</button>
+
+    <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+    <script>
+        let kids = JSON.parse(localStorage.getItem('kidsArea_data')) || [];
+        let wakeLock = null;
+        let timerInterval = null;
+
+        // --- 1. الشاشة تفضل منورة (Wake Lock API) ---
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock is active');
+                }
+            } catch (err) { console.error(`${err.name}, ${err.message}`); }
+        }
+
+        // لو المتصفح نزل لتحت ورجع تاني، نطلب إنارة الشاشة تاني
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        // --- 2. تفريغ وتجهيز الصوت للموبايلات (عشان يشتغل بدون مشاكل) ---
+        function initAudioAndWakeLock() {
+            document.getElementById('alarmAudio').play().then(() => {
+                document.getElementById('alarmAudio').pause();
+                document.getElementById('alarmAudio').currentTime = 0;
+            }).catch(e => console.log("Audio prep waiting for user interaction"));
+            requestWakeLock();
+        }
+
+        // --- 3. إضافة طفل جديد ---
+        function handleEnter(e) { if (e.key === 'Enter') addChild(15); }
+
+        function addChild(minutes) {
+            initAudioAndWakeLock(); // تفعيل الصوت والشاشة مع أول ضغطة
+            
+            const nameInput = document.getElementById('childNameInput');
+            const name = nameInput.value.trim();
+            
+            if (!name) return alert('الرجاء كتابة اسم الطفل أولاً!');
+
+            const now = new Date();
+            const endTime = new Date(now.getTime() + minutes * 60000); // إضافة الدقايق
+            
+            // تنسيق وقت الخروج عشان يظهر في الكارت (مثال: 10:45 PM)
+            const endTimeFormatted = endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+            const newKid = {
+                id: Date.now().toString(),
+                name: name,
+                endTimeStamp: endTime.getTime(),
+                endTimeFormatted: endTimeFormatted,
+                alarmPlayed: false // عشان المنبه يضرب مرة واحدة بس
+            };
+
+            kids.push(newKid);
+            saveData();
+            nameInput.value = ''; // تفريغ الخانة
+            renderKids();
+        }
+
+        // --- 4. حذف طفل ---
+        function removeChild(id) {
+            kids = kids.filter(kid => kid.id !== id);
+            saveData();
+            renderKids();
+        }
+
+        function clearAllKids() {
+            if (kids.length === 0) return;
+            if (confirm("هل أنتي متأكدة من مسح جميع الأطفال؟ (يُستخدم في نهاية اليوم فقط)")) {
+                kids = [];
+                saveData();
+                renderKids();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('kidsArea_data', JSON.stringify(kids));
+        }
+
+        // --- 5. تحديث الشاشة والعدادات ---
+        function renderKids() {
+            const container = document.getElementById('kidsContainer');
+            
+            if (kids.length === 0) {
+                container.innerHTML = '<p style="text-align:center; width:100%; color:#6b7280; font-weight:bold;">لا يوجد أطفال بالداخل حالياً.</p>';
+                return;
+            }
+
+            let html = '';
+            const now = new Date().getTime();
+
+            // ترتيب الأطفال بحيث اللي وقته هيخلص الأول يظهر فوق
+            let sortedKids = [...kids].sort((a, b) => a.endTimeStamp - b.endTimeStamp);
+
+            sortedKids.forEach(kid => {
+                const timeLeft = kid.endTimeStamp - now;
+                
+                let stateClass = 'state-good';
+                let timeDisplay = '';
+                
+                if (timeLeft <= 0) {
+                    stateClass = 'state-danger';
+                    timeDisplay = 'انتهى الوقت!';
+                    
+                    // تشغيل المنبه لو دي أول مرة يخلص فيها الوقت
+                    if (!kid.alarmPlayed) {
+                        document.getElementById('alarmAudio').play();
+                        kid.alarmPlayed = true; // نعلم إنه رن عشان ميرنش كل ثانية
+                        saveData();
+                    }
+                } else {
+                    // حساب الدقائق والثواني المتبقية
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    
+                    timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    // لو فاضل 3 دقايق أو أقل، نقلب اللون أصفر/برتقالي
+                    if (minutes < 3) { stateClass = 'state-warning'; }
+                }
+
+                html += `
+                    <div class="kid-card ${stateClass}">
+                        <h3 class="kid-name">${kid.name}</h3>
+                        <div class="kid-time">${timeDisplay}</div>
+                        <div class="kid-end">موعد الخروج: ${kid.endTimeFormatted}</div>
+                        <button class="btn-remove" onclick="removeChild('${kid.id}')">✔️ استلام الطفل (مسح)</button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // تحديث العدادات كل ثانية
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(renderKids, 1000);
+
+        // تشغيل الريندر أول ما الصفحة تفتح
+        renderKids();
+    </script>
+</body>
+</html>
