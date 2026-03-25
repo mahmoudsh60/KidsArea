@@ -101,7 +101,6 @@
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        // استخدام مفتاح جديد (v3) لضمان توافق الداتا مع الحالات الجديدة
         let kids = JSON.parse(localStorage.getItem('kidsArea_data_v3')) || []; 
         let wakeLock = null;
         let timerInterval = null;
@@ -140,10 +139,10 @@
             const newKid = {
                 id: Date.now().toString(),
                 name: name,
-                status: 'active', // الحالة الأساسية
+                status: 'active',
                 endTimeStamp: endTime.getTime(),
                 endTimeFormatted: endTimeFormatted,
-                timeLeftPaused: 0 // لحفظ الوقت المتبقي عند الإيقاف المؤقت
+                timeLeftPaused: 0
             };
 
             kids.push(newKid);
@@ -174,31 +173,26 @@
             minutesInput.value = '';
         }
 
-        // 1. زر الاستلام (يوقف العداد ويحوله لأحمر ثابت)
         function receiveKid(id) {
             const kid = kids.find(k => k.id === id);
             if (kid) {
                 kid.status = 'received';
-                // نحفظ الوقت اللي فاضل عشان لو عملت استئناف يكمل منه
                 kid.timeLeftPaused = kid.endTimeStamp - new Date().getTime();
                 saveData();
                 renderKids();
             }
         }
 
-        // 2. زر الاستئناف (يرجع العداد يشتغل)
         function resumeKid(id) {
             const kid = kids.find(k => k.id === id);
             if (kid) {
                 kid.status = 'active';
-                // نحسب الوقت الجديد بناءً على الوقت اللي كان فاضل
                 kid.endTimeStamp = new Date().getTime() + kid.timeLeftPaused;
                 saveData();
                 renderKids();
             }
         }
 
-        // 3. زر الحذف/الإنهاء النهائي (يقفل الكارت ويسيبه للمرجعية)
         function archiveKid(id) {
             const kid = kids.find(k => k.id === id);
             if (kid) {
@@ -238,16 +232,16 @@
             const now = new Date().getTime();
             let isAlarmNeeded = false;
 
-            // ترتيب الأطفال: الشغال فوق (حسب الوقت)، وبعده المستلم، وبعده المؤرشف للمرجعية
+            // التعديل هنا: الـ active والـ received ليهم نفس الأولوية (1) عشان يفضلوا مكانهم.. والـ archived بس ينزل للأخر (2)
             let sortedKids = [...kids].sort((a, b) => {
-                const order = { 'active': 1, 'received': 2, 'archived': 3 };
+                const order = { 'active': 1, 'received': 1, 'archived': 2 };
                 const stateA = a.status || 'active';
                 const stateB = b.status || 'active';
                 
                 if (order[stateA] !== order[stateB]) {
                     return order[stateA] - order[stateB];
                 }
-                // لو هما في نفس الحالة، نرتبهم بالوقت
+                // ترتيب بالوقت لو ليهم نفس الأولوية
                 return a.endTimeStamp - b.endTimeStamp;
             });
 
