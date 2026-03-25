@@ -30,7 +30,6 @@
         .btn-60 { background-color: var(--success); }
         .btn-custom { background-color: var(--custom); color: #856404; }
         
-        /* تصميم خانة البحث المتمددة */
         .search-container { text-align: center; margin-bottom: 15px; }
         #searchKidInput { width: 120px; padding: 10px 15px; border-radius: 20px; border: 2px solid var(--primary); font-family: inherit; font-size: 14px; text-align: center; transition: width 0.4s ease-in-out; outline: none; background: white;}
         #searchKidInput:focus { width: 80%; max-width: 300px; border-color: var(--warning); }
@@ -141,7 +140,6 @@
             kids.push(newKid);
             saveData();
             
-            // مسح حقل البحث عند إضافة طفل جديد عشان يظهر فوراً
             document.getElementById('searchKidInput').value = '';
             renderKids();
         }
@@ -204,10 +202,10 @@
             const now = new Date().getTime();
             let isAlarmNeeded = false;
 
-            // 1. ترتيب الأطفال (الأقرب للانتهاء يظهر فوق)
+            // الترتيب: اللي وقته هيخلص الأول يظهر فوق
             let sortedKids = [...kids].sort((a, b) => a.endTimeStamp - b.endTimeStamp);
 
-            // 2. تطبيق فلتر البحث
+            // تطبيق البحث
             if (searchValue) {
                 sortedKids = sortedKids.filter(kid => kid.name.toLowerCase().includes(searchValue));
             }
@@ -261,113 +259,6 @@
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(renderKids, 1000);
 
-        renderKids();
-    </script>
-</body>
-</html>
-            
-            if (!name) return alert('الرجاء كتابة اسم الطفل أولاً!');
-
-            const now = new Date();
-            const endTime = new Date(now.getTime() + minutes * 60000); // إضافة الدقايق
-            
-            // تنسيق وقت الخروج عشان يظهر في الكارت (مثال: 10:45 PM)
-            const endTimeFormatted = endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
-            const newKid = {
-                id: Date.now().toString(),
-                name: name,
-                endTimeStamp: endTime.getTime(),
-                endTimeFormatted: endTimeFormatted,
-                alarmPlayed: false // عشان المنبه يضرب مرة واحدة بس
-            };
-
-            kids.push(newKid);
-            saveData();
-            nameInput.value = ''; // تفريغ الخانة
-            renderKids();
-        }
-
-        // --- 4. حذف طفل ---
-        function removeChild(id) {
-            kids = kids.filter(kid => kid.id !== id);
-            saveData();
-            renderKids();
-        }
-
-        function clearAllKids() {
-            if (kids.length === 0) return;
-            if (confirm("هل أنتي متأكدة من مسح جميع الأطفال؟ (يُستخدم في نهاية اليوم فقط)")) {
-                kids = [];
-                saveData();
-                renderKids();
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('kidsArea_data', JSON.stringify(kids));
-        }
-
-        // --- 5. تحديث الشاشة والعدادات ---
-        function renderKids() {
-            const container = document.getElementById('kidsContainer');
-            
-            if (kids.length === 0) {
-                container.innerHTML = '<p style="text-align:center; width:100%; color:#6b7280; font-weight:bold;">لا يوجد أطفال بالداخل حالياً.</p>';
-                return;
-            }
-
-            let html = '';
-            const now = new Date().getTime();
-
-            // ترتيب الأطفال بحيث اللي وقته هيخلص الأول يظهر فوق
-            let sortedKids = [...kids].sort((a, b) => a.endTimeStamp - b.endTimeStamp);
-
-            sortedKids.forEach(kid => {
-                const timeLeft = kid.endTimeStamp - now;
-                
-                let stateClass = 'state-good';
-                let timeDisplay = '';
-                
-                if (timeLeft <= 0) {
-                    stateClass = 'state-danger';
-                    timeDisplay = 'انتهى الوقت!';
-                    
-                    // تشغيل المنبه لو دي أول مرة يخلص فيها الوقت
-                    if (!kid.alarmPlayed) {
-                        document.getElementById('alarmAudio').play();
-                        kid.alarmPlayed = true; // نعلم إنه رن عشان ميرنش كل ثانية
-                        saveData();
-                    }
-                } else {
-                    // حساب الدقائق والثواني المتبقية
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                    
-                    timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                    // لو فاضل 3 دقايق أو أقل، نقلب اللون أصفر/برتقالي
-                    if (minutes < 3) { stateClass = 'state-warning'; }
-                }
-
-                html += `
-                    <div class="kid-card ${stateClass}">
-                        <h3 class="kid-name">${kid.name}</h3>
-                        <div class="kid-time">${timeDisplay}</div>
-                        <div class="kid-end">موعد الخروج: ${kid.endTimeFormatted}</div>
-                        <button class="btn-remove" onclick="removeChild('${kid.id}')">✔️ استلام الطفل (مسح)</button>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // تحديث العدادات كل ثانية
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(renderKids, 1000);
-
-        // تشغيل الريندر أول ما الصفحة تفتح
         renderKids();
     </script>
 </body>
