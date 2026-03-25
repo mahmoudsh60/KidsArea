@@ -43,11 +43,17 @@
         
         .btn-remove { background: rgba(0,0,0,0.3); color: white; border: none; padding: 10px 5px; border-radius: 6px; font-family: inherit; font-weight: bold; font-size: 13px; cursor: pointer; width: 100%; margin-top: auto; }
         
+        /* حالات الألوان */
         .state-good { background-color: var(--success); }
         .state-warning { background-color: var(--warning); color: #000; }
         .state-warning .btn-remove { background: rgba(0,0,0,0.1); color: #000; }
         .state-danger { background-color: var(--danger); animation: blink 1.5s infinite; }
         
+        /* حالة الاستلام المؤقت (أحمر ثابت بدون وميض) */
+        .state-received { background-color: #dc2626; } 
+        /* حالة الأرشيف (رمادي للمرجعية) */
+        .state-archived { background-color: #6b7280; opacity: 0.9; }
+
         @keyframes blink {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
@@ -95,7 +101,8 @@
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        let kids = JSON.parse(localStorage.getItem('kidsArea_data_v2')) || []; 
+        // استخدام مفتاح جديد (v3) لضمان توافق الداتا مع الحالات الجديدة
+        let kids = JSON.parse(localStorage.getItem('kidsArea_data_v3')) || []; 
         let wakeLock = null;
         let timerInterval = null;
 
@@ -133,13 +140,14 @@
             const newKid = {
                 id: Date.now().toString(),
                 name: name,
+                status: 'active', // الحالة الأساسية
                 endTimeStamp: endTime.getTime(),
-                endTimeFormatted: endTimeFormatted
+                endTimeFormatted: endTimeFormatted,
+                timeLeftPaused: 0 // لحفظ الوقت المتبقي عند الإيقاف المؤقت
             };
 
             kids.push(newKid);
             saveData();
-            
             document.getElementById('searchKidInput').value = '';
             renderKids();
         }
@@ -166,10 +174,38 @@
             minutesInput.value = '';
         }
 
-        function removeKid(id) {
-            kids = kids.filter(kid => kid.id !== id);
-            saveData();
-            renderKids();
+        // 1. زر الاستلام (يوقف العداد ويحوله لأحمر ثابت)
+        function receiveKid(id) {
+            const kid = kids.find(k => k.id === id);
+            if (kid) {
+                kid.status = 'received';
+                // نحفظ الوقت اللي فاضل عشان لو عملت استئناف يكمل منه
+                kid.timeLeftPaused = kid.endTimeStamp - new Date().getTime();
+                saveData();
+                renderKids();
+            }
+        }
+
+        // 2. زر الاستئناف (يرجع العداد يشتغل)
+        function resumeKid(id) {
+            const kid = kids.find(k => k.id === id);
+            if (kid) {
+                kid.status = 'active';
+                // نحسب الوقت الجديد بناءً على الوقت اللي كان فاضل
+                kid.endTimeStamp = new Date().getTime() + kid.timeLeftPaused;
+                saveData();
+                renderKids();
+            }
+        }
+
+        // 3. زر الحذف/الإنهاء النهائي (يقفل الكارت ويسيبه للمرجعية)
+        function archiveKid(id) {
+            const kid = kids.find(k => k.id === id);
+            if (kid) {
+                kid.status = 'archived';
+                saveData();
+                renderKids();
+            }
         }
 
         function clearAllKids() {
@@ -183,7 +219,7 @@
         }
 
         function saveData() {
-            localStorage.setItem('kidsArea_data_v2', JSON.stringify(kids));
+            localStorage.setItem('kidsArea_data_v3', JSON.stringify(kids));
         }
 
         function renderKids() {
@@ -202,10 +238,20 @@
             const now = new Date().getTime();
             let isAlarmNeeded = false;
 
-            // الترتيب: اللي وقته هيخلص الأول يظهر فوق
-            let sortedKids = [...kids].sort((a, b) => a.endTimeStamp - b.endTimeStamp);
+            // ترتيب الأطفال: الشغال فوق (حسب الوقت)، وبعده المستلم، وبعده المؤرشف للمرجعية
+            let sortedKids = [...kids].sort((a, b) => {
+                const order = { 'active': 1, 'received': 2, 'archived': 3 };
+                const stateA = a.status || 'active';
+                const stateB = b.status || 'active';
+                
+                if (order[stateA] !== order[stateB]) {
+                    return order[stateA] - order[stateB];
+                }
+                // لو هما في نفس الحالة، نرتبهم بالوقت
+                return a.endTimeStamp - b.endTimeStamp;
+            });
 
-            // تطبيق البحث
+            // فلتر البحث
             if (searchValue) {
                 sortedKids = sortedKids.filter(kid => kid.name.toLowerCase().includes(searchValue));
             }
@@ -216,32 +262,60 @@
             }
 
             sortedKids.forEach(kid => {
-                const timeLeft = kid.endTimeStamp - now;
-                
-                let stateClass = 'state-good';
-                let timeDisplay = '';
-                
-                if (timeLeft <= 0) {
-                    stateClass = 'state-danger';
-                    timeDisplay = '❌ انتهى!';
-                    isAlarmNeeded = true;
-                } else {
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                const status = kid.status || 'active';
+
+                if (status === 'archived') {
+                    // كارت الأرشيف (للمرجعية فقط)
+                    html += `
+                        <div class="kid-card state-archived">
+                            <h3 class="kid-name">${kid.name}</h3>
+                            <div class="kid-time" style="font-size:16px; margin: 15px 0;">🔒 تم الإنهاء</div>
+                            <div class="kid-end">دخول: ${kid.endTimeFormatted}</div>
+                            <div style="font-size: 11px; text-align: center; color: #ddd; margin-top: auto;">باقي للمرجعية 🦆</div>
+                        </div>
+                    `;
+                } 
+                else if (status === 'received') {
+                    // كارت الاستلام (أحمر ثابت + استئناف أو حذف)
+                    html += `
+                        <div class="kid-card state-received">
+                            <h3 class="kid-name">${kid.name}</h3>
+                            <div class="kid-time" style="font-size:20px; margin: 10px 0;">⏸️ مستلم</div>
+                            <div class="kid-end">موعده كان: ${kid.endTimeFormatted}</div>
+                            <div style="display:flex; gap:5px; margin-top: auto;">
+                                <button class="btn-remove" style="background:#facc15; color:#000;" onclick="resumeKid('${kid.id}')">↩️ استئناف</button>
+                                <button class="btn-remove" style="background:#7f1d1d;" onclick="archiveKid('${kid.id}')">حذف 🔒</button>
+                            </div>
+                        </div>
+                    `;
+                } 
+                else {
+                    // الكارت النشط العادي
+                    const timeLeft = kid.endTimeStamp - now;
+                    let stateClass = 'state-good';
+                    let timeDisplay = '';
                     
-                    timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    if (timeLeft <= 0) {
+                        stateClass = 'state-danger';
+                        timeDisplay = '❌ انتهى!';
+                        isAlarmNeeded = true;
+                    } else {
+                        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                        timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                    if (minutes < 5) { stateClass = 'state-warning'; }
+                        if (minutes < 5) { stateClass = 'state-warning'; }
+                    }
+
+                    html += `
+                        <div class="kid-card ${stateClass}">
+                            <h3 class="kid-name">${kid.name}</h3>
+                            <div class="kid-time">${timeDisplay}</div>
+                            <div class="kid-end">الخروج: ${kid.endTimeFormatted}</div>
+                            <button class="btn-remove" onclick="receiveKid('${kid.id}')">استلام ✔️</button>
+                        </div>
+                    `;
                 }
-
-                html += `
-                    <div class="kid-card ${stateClass}">
-                        <h3 class="kid-name">${kid.name}</h3>
-                        <div class="kid-time">${timeDisplay}</div>
-                        <div class="kid-end">الخروج: ${kid.endTimeFormatted}</div>
-                        <button class="btn-remove" onclick="removeKid('${kid.id}')">استلام ✔️</button>
-                    </div>
-                `;
             });
 
             container.innerHTML = html;
