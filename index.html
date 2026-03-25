@@ -105,6 +105,16 @@
         let wakeLock = null;
         let timerInterval = null;
 
+        // دالة إرسال الإشعار للتليجرام
+        function sendTelegramNotification(kidName) {
+            const token = "8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY";
+            const chatId = "996279899";
+            const message = `🚨 تنبيه! الطفل "${kidName}" وقته خلص في الكيدز إريا 🦆`;
+            const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+            
+            fetch(url).catch(err => console.error("مشكلة في إرسال التليجرام:", err));
+        }
+
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
@@ -142,7 +152,8 @@
                 status: 'active',
                 endTimeStamp: endTime.getTime(),
                 endTimeFormatted: endTimeFormatted,
-                timeLeftPaused: 0
+                timeLeftPaused: 0,
+                telegramSent: false // متعلم بـ false عشان يتبعتله الرسالة أول ما يخلص
             };
 
             kids.push(newKid);
@@ -188,6 +199,7 @@
             if (kid) {
                 kid.status = 'active';
                 kid.endTimeStamp = new Date().getTime() + kid.timeLeftPaused;
+                kid.telegramSent = false; // بنصفر التليجرام عشان يبعت تاني لو الوقت خلص بعد الاستئناف
                 saveData();
                 renderKids();
             }
@@ -231,21 +243,16 @@
             let html = '';
             const now = new Date().getTime();
             let isAlarmNeeded = false;
+            let needsSave = false; // لو بعتنا تليجرام، هنحتاج نحفظ الداتا
 
-            // التعديل هنا: الـ active والـ received ليهم نفس الأولوية (1) عشان يفضلوا مكانهم.. والـ archived بس ينزل للأخر (2)
             let sortedKids = [...kids].sort((a, b) => {
                 const order = { 'active': 1, 'received': 1, 'archived': 2 };
                 const stateA = a.status || 'active';
                 const stateB = b.status || 'active';
-                
-                if (order[stateA] !== order[stateB]) {
-                    return order[stateA] - order[stateB];
-                }
-                // ترتيب بالوقت لو ليهم نفس الأولوية
+                if (order[stateA] !== order[stateB]) { return order[stateA] - order[stateB]; }
                 return a.endTimeStamp - b.endTimeStamp;
             });
 
-            // فلتر البحث
             if (searchValue) {
                 sortedKids = sortedKids.filter(kid => kid.name.toLowerCase().includes(searchValue));
             }
@@ -259,7 +266,6 @@
                 const status = kid.status || 'active';
 
                 if (status === 'archived') {
-                    // كارت الأرشيف (للمرجعية فقط)
                     html += `
                         <div class="kid-card state-archived">
                             <h3 class="kid-name">${kid.name}</h3>
@@ -270,7 +276,6 @@
                     `;
                 } 
                 else if (status === 'received') {
-                    // كارت الاستلام (أحمر ثابت + استئناف أو حذف)
                     html += `
                         <div class="kid-card state-received">
                             <h3 class="kid-name">${kid.name}</h3>
@@ -284,7 +289,6 @@
                     `;
                 } 
                 else {
-                    // الكارت النشط العادي
                     const timeLeft = kid.endTimeStamp - now;
                     let stateClass = 'state-good';
                     let timeDisplay = '';
@@ -293,6 +297,14 @@
                         stateClass = 'state-danger';
                         timeDisplay = '❌ انتهى!';
                         isAlarmNeeded = true;
+
+                        // إرسال رسالة التليجرام لو لسه متبعتتش
+                        if (!kid.telegramSent) {
+                            sendTelegramNotification(kid.name);
+                            kid.telegramSent = true;
+                            needsSave = true; // ندي إشارة بحفظ الداتا بعد اللوب
+                        }
+
                     } else {
                         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
                         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
@@ -313,6 +325,9 @@
             });
 
             container.innerHTML = html;
+
+            // حفظ حالة التليجرام عشان ميبعتش آلاف الرسايل
+            if (needsSave) saveData();
 
             if (isAlarmNeeded) {
                 if (alarm.paused) {
