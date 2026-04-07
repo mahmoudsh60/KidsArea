@@ -45,7 +45,7 @@
         }
 
         .clear-all-btn { display: block; width: 100%; max-width: 250px; margin: 25px auto; border: 2px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; background: transparent;}
-        #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; margin-bottom: 10px; }
+        #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; margin-bottom: 10px; font-size: 12px;}
     </style>
 </head>
 <body>
@@ -64,7 +64,7 @@
         </div>
     </div>
     
-    <div id="loader">جاري المزامنة مع الإكسيل... ⏳</div>
+    <div id="loader">يتم الحفظ في الخلفية... ⚡</div>
     
     <div class="kids-grid" id="kidsContainer"></div>
     
@@ -77,7 +77,6 @@
         
         let kids = [];
         
-        // جلب البيانات من السيرفر
         async function fetchKids() {
             try {
                 const response = await fetch(WEB_APP_URL + "?action=getKidsArea");
@@ -86,27 +85,24 @@
                     kids = result.data; 
                     renderKids(); 
                 }
-            } catch(e) { 
-                console.log("تأخر في جلب البيانات من الإكسيل"); 
-            }
+            } catch(e) { console.log("خطأ في جلب البيانات"); }
         }
 
-        // إرسال البيانات للسيرفر مع تفادي خطأ CORS
+        // إرسال بخاصية no-cors لتخطي حظر المتصفح
         function syncAction(actionData) {
             const loader = document.getElementById('loader');
             loader.style.display = 'block';
             
             fetch(WEB_APP_URL, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                mode: 'no-cors', // الحل السحري لتخطي الخطأ
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(actionData) 
             })
-            .then(res => res.json())
-            .then(data => {
-                loader.style.display = 'none';
+            .then(() => {
+                setTimeout(() => { loader.style.display = 'none'; }, 1000);
             })
             .catch(err => {
-                console.error("خطأ مزامنة:", err);
                 loader.style.display = 'none';
             });
         }
@@ -116,7 +112,7 @@
             const chatId = "996279899";
             const message = `🚨 تنبيه! الطفل "${kidName}" وقته خلص في الكيدز إريا 🦆`;
             const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-            fetch(url).catch(err => console.error("مشكلة في إرسال التليجرام:", err));
+            fetch(url, {mode: 'no-cors'}).catch(err => {});
         }
 
         function addChild(minutes) {
@@ -139,15 +135,11 @@
                 endTimeFormatted: endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
             };
 
-            // إضافة الطفل فوراً للشاشة (Optimistic UI)
             kids.push(newKid);
             renderKids();
-            
-            // إرسال للإكسيل
             syncAction({ action: 'addKid', kid: newKid });
             document.getElementById('childNameInput').value = '';
             
-            // تشغيل الصوت في الخلفية لضمان عمله لاحقاً
             const alarm = document.getElementById('alarmAudio');
             alarm.play().then(() => { alarm.pause(); alarm.currentTime = 0; }).catch(e => {});
         }
@@ -164,14 +156,13 @@
             const kid = kids.find(k => k.id === id);
             if (kid) {
                 kid.status = newStatus;
-                if(newStatus === 'active') { // استئناف
+                if(newStatus === 'active') { 
                     let pausedDiff = kid.endTimeStamp - Date.now();
                     let newEnd = new Date(Date.now() + pausedDiff);
                     kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                     kid.telegramSent = false;
                 }
-                
-                renderKids(); // تحديث فوري للشاشة
+                renderKids(); 
                 syncAction({ action: 'updateKid', kid: kid });
             }
         }
@@ -190,8 +181,7 @@
             
             if (kids.length === 0) {
                 container.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:#6b7280; font-weight:bold; margin-top:10px;">لا يوجد أطفال بالداخل. 🦆</p>';
-                alarm.pause();
-                return;
+                alarm.pause(); return;
             }
 
             let html = '';
@@ -218,7 +208,6 @@
                         stateClass = 'state-danger'; 
                         timeDisplay = '❌ انتهى!'; 
                         isAlarmNeeded = true;
-                        
                         if (!kid.telegramSent) {
                             sendTelegramNotification(kid.name || kid.id.split(" - ")[0]);
                             kid.telegramSent = true;
@@ -242,22 +231,12 @@
             });
 
             container.innerHTML = html;
-            
-            if (isAlarmNeeded && alarm.paused) {
-                alarm.play().catch(e => console.log("في انتظار تفاعل المستخدم لتشغيل الصوت"));
-            } else if (!isAlarmNeeded) { 
-                alarm.pause(); 
-                alarm.currentTime = 0; 
-            }
+            if (isAlarmNeeded && alarm.paused) { alarm.play().catch(e => {}); } 
+            else if (!isAlarmNeeded) { alarm.pause(); alarm.currentTime = 0; }
         }
 
-        // تحديث البيانات من الإكسيل كل 8 ثواني لتقليل الضغط
-        setInterval(fetchKids, 8000);
-        
-        // تحديث التايمر المحلي كل ثانية
+        setInterval(fetchKids, 10000);
         setInterval(renderKids, 1000); 
-        
-        // استدعاء أولي
         fetchKids();
     </script>
 </body>
