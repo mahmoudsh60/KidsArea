@@ -10,28 +10,49 @@
         body { background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; margin: 0; padding: 10px; padding-bottom: 80px;}
         header { text-align: center; margin-bottom: 15px; border-bottom: 3px solid var(--primary); background: rgba(255,255,255,0.5); border-radius: 0 0 15px 15px; padding: 10px;}
         header h1 { margin: 0; color: var(--primary); font-weight: 900; font-size: 24px;}
+        
         .add-section { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
         .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
         .input-group input { padding: 12px; border-radius: 10px; border: 2px solid #d1d5db; font-size: 16px; font-weight: bold; text-align: center; }
-        #childNameInput { flex: 2; } #customMinutesInput { flex: 1; border-color: var(--custom); background: #fff3cd; color: #856404; }
+        #childNameInput { flex: 2; } 
+        #customMinutesInput { flex: 1; border-color: var(--custom); background: #fff3cd; color: #856404; }
+        
         .btn-group { display: flex; gap: 8px; }
-        .btn { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; font-weight: bold; font-size: 14px; color: white; cursor: pointer; text-align: center;}
-        .btn-15 { background: var(--primary); } .btn-60 { background: var(--success); } .btn-custom { background: var(--custom); color: #856404; }
+        .btn { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; font-weight: bold; font-size: 14px; color: white; cursor: pointer; text-align: center; transition: 0.2s;}
+        .btn:active { transform: scale(0.95); }
+        .btn-15 { background: var(--primary); } 
+        .btn-60 { background: var(--success); } 
+        .btn-custom { background: var(--custom); color: #856404; }
+        
         .kids-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .kid-card { padding: 10px; border-radius: 10px; color: white; display: flex; flex-direction: column; text-align: center; }
+        @media (min-width: 600px) { .kids-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; } }
+        
+        .kid-card { padding: 10px; border-radius: 10px; color: white; display: flex; flex-direction: column; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
         .kid-name { font-size: 16px; font-weight: 900; margin: 0 0 5px; border-bottom: 1px dashed rgba(255,255,255,0.5); padding-bottom: 3px; }
         .kid-time { font-size: 26px; font-weight: 900; direction: ltr; margin: 5px 0;}
         .btn-remove { background: rgba(0,0,0,0.3); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: auto;}
-        .state-good { background: var(--success); } .state-warning { background: var(--warning); color: #000; } .state-danger { background: var(--danger); } .state-received { background: #dc2626; } .state-archived { background: #6b7280; }
+        
+        .state-good { background: var(--success); } 
+        .state-warning { background: var(--warning); color: #000; } 
+        .state-danger { background: var(--danger); animation: blink 1.5s infinite; } 
+        .state-received { background: #dc2626; } 
+        .state-archived { background: #6b7280; }
+        
+        @keyframes blink {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
         .clear-all-btn { display: block; width: 100%; max-width: 250px; margin: 25px auto; border: 2px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; background: transparent;}
-        #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; }
+        #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <header><h1>🦆 إدارة الكيدز إريا 🦆</h1></header>
     
     <div class="add-section">
-        <input type="text" id="cashierName" placeholder="اسم الكاشير" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; text-align: center; font-weight: bold;">
+        <input type="text" id="cashierName" placeholder="اسم الموظف / الكاشير" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; text-align: center; font-weight: bold;">
         <div class="input-group">
             <input type="text" id="childNameInput" placeholder="اسم الطفل 🦆">
             <input type="number" id="customMinutesInput" placeholder="دقائق ⏰">
@@ -42,28 +63,60 @@
             <button class="btn btn-custom" onclick="addCustomChild()">مخصوص</button>
         </div>
     </div>
+    
     <div id="loader">جاري المزامنة مع الإكسيل... ⏳</div>
+    
     <div class="kids-grid" id="kidsContainer"></div>
+    
     <button class="clear-all-btn" onclick="clearAllKids()">🗑️ مسح الكل (نهاية اليوم)</button>
+    
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        const WEB_APP_URL = "ضع_الرابط_الجديد_هنا"; // ضع رابط السكريبت هنا
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec";
+        
         let kids = [];
         
+        // جلب البيانات من السيرفر
         async function fetchKids() {
             try {
                 const response = await fetch(WEB_APP_URL + "?action=getKidsArea");
                 const result = await response.json();
-                if(result.success) { kids = result.data; renderKids(); }
-            } catch(e) { console.log("خطأ في المزامنة"); }
+                if(result.success) { 
+                    kids = result.data; 
+                    renderKids(); 
+                }
+            } catch(e) { 
+                console.log("تأخر في جلب البيانات من الإكسيل"); 
+            }
         }
 
-        async function syncAction(actionData) {
-            document.getElementById('loader').style.display = 'block';
-            await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(actionData) });
-            await fetchKids();
-            document.getElementById('loader').style.display = 'none';
+        // إرسال البيانات للسيرفر مع تفادي خطأ CORS
+        function syncAction(actionData) {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            fetch(WEB_APP_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(actionData) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                loader.style.display = 'none';
+            })
+            .catch(err => {
+                console.error("خطأ مزامنة:", err);
+                loader.style.display = 'none';
+            });
+        }
+
+        function sendTelegramNotification(kidName) {
+            const token = "8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY";
+            const chatId = "996279899";
+            const message = `🚨 تنبيه! الطفل "${kidName}" وقته خلص في الكيدز إريا 🦆`;
+            const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+            fetch(url).catch(err => console.error("مشكلة في إرسال التليجرام:", err));
         }
 
         function addChild(minutes) {
@@ -76,17 +129,35 @@
             const kidId = name + " - " + Date.now().toString().slice(-4);
 
             const newKid = {
-                id: kidId, duration: minutes, status: 'active', cashier: cashier,
+                id: kidId, 
+                name: name,
+                duration: minutes, 
+                status: 'active', 
+                cashier: cashier,
+                endTimeStamp: endTime.getTime(),
+                telegramSent: false,
                 endTimeFormatted: endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
             };
 
+            // إضافة الطفل فوراً للشاشة (Optimistic UI)
+            kids.push(newKid);
+            renderKids();
+            
+            // إرسال للإكسيل
             syncAction({ action: 'addKid', kid: newKid });
             document.getElementById('childNameInput').value = '';
+            
+            // تشغيل الصوت في الخلفية لضمان عمله لاحقاً
+            const alarm = document.getElementById('alarmAudio');
+            alarm.play().then(() => { alarm.pause(); alarm.currentTime = 0; }).catch(e => {});
         }
 
         function addCustomChild() {
             const min = parseInt(document.getElementById('customMinutesInput').value);
-            if(min > 0) addChild(min);
+            if(min > 0) {
+                addChild(min);
+                document.getElementById('customMinutesInput').value = '';
+            }
         }
 
         function updateKidState(id, newStatus) {
@@ -97,24 +168,38 @@
                     let pausedDiff = kid.endTimeStamp - Date.now();
                     let newEnd = new Date(Date.now() + pausedDiff);
                     kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    kid.telegramSent = false;
                 }
+                
+                renderKids(); // تحديث فوري للشاشة
                 syncAction({ action: 'updateKid', kid: kid });
             }
         }
 
         function clearAllKids() {
-            if(confirm("مسح جميع البيانات من الشيت؟")) syncAction({ action: 'clearKids' });
+            if(confirm("هل أنت متأكد من مسح جميع البيانات من الشيت؟")) {
+                kids = [];
+                renderKids();
+                syncAction({ action: 'clearKids' });
+            }
         }
 
         function renderKids() {
             const container = document.getElementById('kidsContainer');
             const alarm = document.getElementById('alarmAudio');
+            
+            if (kids.length === 0) {
+                container.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:#6b7280; font-weight:bold; margin-top:10px;">لا يوجد أطفال بالداخل. 🦆</p>';
+                alarm.pause();
+                return;
+            }
+
             let html = '';
             let isAlarmNeeded = false;
             const now = Date.now();
 
             kids.forEach(kid => {
-                if(kid.status === 'archived') return; // لا نعرض المؤرشف
+                if(kid.status === 'archived') return; 
                 
                 let stateClass = 'state-good';
                 let timeDisplay = '';
@@ -130,7 +215,14 @@
                 } else {
                     let timeLeft = kid.endTimeStamp - now;
                     if(timeLeft <= 0) {
-                        stateClass = 'state-danger'; timeDisplay = '❌ انتهى!'; isAlarmNeeded = true;
+                        stateClass = 'state-danger'; 
+                        timeDisplay = '❌ انتهى!'; 
+                        isAlarmNeeded = true;
+                        
+                        if (!kid.telegramSent) {
+                            sendTelegramNotification(kid.name || kid.id.split(" - ")[0]);
+                            kid.telegramSent = true;
+                        }
                     } else {
                         let m = Math.floor((timeLeft % 3600000) / 60000);
                         let s = Math.floor((timeLeft % 60000) / 1000);
@@ -142,7 +234,7 @@
 
                 html += `
                     <div class="kid-card ${stateClass}">
-                        <h3 class="kid-name">${kid.name}</h3>
+                        <h3 class="kid-name">${kid.name || kid.id.split(" - ")[0]}</h3>
                         <div class="kid-time">${timeDisplay}</div>
                         <div style="font-size:11px; margin-bottom:10px;">خروج: ${kid.endTimeFormatted}</div>
                         ${btnHtml}
@@ -150,13 +242,22 @@
             });
 
             container.innerHTML = html;
-            if (isAlarmNeeded && alarm.paused) alarm.play();
-            if (!isAlarmNeeded) { alarm.pause(); alarm.currentTime = 0; }
+            
+            if (isAlarmNeeded && alarm.paused) {
+                alarm.play().catch(e => console.log("في انتظار تفاعل المستخدم لتشغيل الصوت"));
+            } else if (!isAlarmNeeded) { 
+                alarm.pause(); 
+                alarm.currentTime = 0; 
+            }
         }
 
-        // تحديث البيانات كل 5 ثواني
-        setInterval(fetchKids, 5000);
-        setInterval(renderKids, 1000); // تحديث التايمر المحلي
+        // تحديث البيانات من الإكسيل كل 8 ثواني لتقليل الضغط
+        setInterval(fetchKids, 8000);
+        
+        // تحديث التايمر المحلي كل ثانية
+        setInterval(renderKids, 1000); 
+        
+        // استدعاء أولي
         fetchKids();
     </script>
 </body>
