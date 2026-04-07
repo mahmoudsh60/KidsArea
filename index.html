@@ -73,9 +73,10 @@
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec";
+        const WEB_APP_URL = "ضع_الرابط_الجديد_هنا"; // <--- ضع الرابط الجديد بعد الديبلوى هنا
         
         let kids = [];
+        let notifiedKids = new Set(); // ذاكرة لمنع تكرار رسائل التليجرام
         
         async function fetchKids() {
             try {
@@ -85,26 +86,21 @@
                     kids = result.data; 
                     renderKids(); 
                 }
-            } catch(e) { console.log("خطأ في جلب البيانات"); }
+            } catch(e) { console.log("تأخر في جلب البيانات"); }
         }
 
-        // إرسال بخاصية no-cors لتخطي حظر المتصفح
         function syncAction(actionData) {
             const loader = document.getElementById('loader');
             loader.style.display = 'block';
             
             fetch(WEB_APP_URL, { 
                 method: 'POST', 
-                mode: 'no-cors', // الحل السحري لتخطي الخطأ
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(actionData) 
             })
-            .then(() => {
-                setTimeout(() => { loader.style.display = 'none'; }, 1000);
-            })
-            .catch(err => {
-                loader.style.display = 'none';
-            });
+            .then(() => { setTimeout(() => { loader.style.display = 'none'; }, 1000); })
+            .catch(err => { loader.style.display = 'none'; });
         }
 
         function sendTelegramNotification(kidName) {
@@ -121,7 +117,8 @@
             if (!name) return alert('الرجاء كتابة اسم الطفل!');
             
             const now = new Date();
-            const endTime = new Date(now.getTime() + minutes * 60000);
+            const endTimeStamp = now.getTime() + (minutes * 60000);
+            const endTime = new Date(endTimeStamp);
             const kidId = name + " - " + Date.now().toString().slice(-4);
 
             const newKid = {
@@ -130,8 +127,7 @@
                 duration: minutes, 
                 status: 'active', 
                 cashier: cashier,
-                endTimeStamp: endTime.getTime(),
-                telegramSent: false,
+                endTimeStamp: endTimeStamp,
                 endTimeFormatted: endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
             };
 
@@ -158,9 +154,10 @@
                 kid.status = newStatus;
                 if(newStatus === 'active') { 
                     let pausedDiff = kid.endTimeStamp - Date.now();
-                    let newEnd = new Date(Date.now() + pausedDiff);
+                    kid.endTimeStamp = Date.now() + pausedDiff; // تحديث التايمر الفعلي
+                    let newEnd = new Date(kid.endTimeStamp);
                     kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    kid.telegramSent = false;
+                    notifiedKids.delete(kid.id); // لو استأنفناه نمسحه من الذاكرة عشان يتبعتله تاني لما يخلص
                 }
                 renderKids(); 
                 syncAction({ action: 'updateKid', kid: kid });
@@ -170,6 +167,7 @@
         function clearAllKids() {
             if(confirm("هل أنت متأكد من مسح جميع البيانات من الشيت؟")) {
                 kids = [];
+                notifiedKids.clear();
                 renderKids();
                 syncAction({ action: 'clearKids' });
             }
@@ -204,13 +202,16 @@
                                </div>`;
                 } else {
                     let timeLeft = kid.endTimeStamp - now;
-                    if(timeLeft <= 0) {
+                    
+                    if(timeLeft <= 0 || isNaN(timeLeft)) { // لو الوقت صفر أو في خطأ
                         stateClass = 'state-danger'; 
                         timeDisplay = '❌ انتهى!'; 
                         isAlarmNeeded = true;
-                        if (!kid.telegramSent) {
+                        
+                        // هنا الحل لمنع التكرار: نبعت رسالة بس لو الطفل مش في الذاكرة
+                        if (!notifiedKids.has(kid.id)) {
                             sendTelegramNotification(kid.name || kid.id.split(" - ")[0]);
-                            kid.telegramSent = true;
+                            notifiedKids.add(kid.id);
                         }
                     } else {
                         let m = Math.floor((timeLeft % 3600000) / 60000);
