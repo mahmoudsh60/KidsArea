@@ -42,6 +42,7 @@
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec";
         let kids = [], notified = new Set();
+        
         async function fetchKids() {
             try {
                 const res = await fetch(WEB_APP_URL + "?action=getKidsArea");
@@ -57,17 +58,32 @@
                 }
             } catch(e) { console.log("خطأ تحديث"); }
         }
+
         function syncAction(data) {
             document.getElementById('loader').style.display='block';
-            fetch(WEB_APP_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(data) })
-            .then(()=> { document.getElementById('loader').style.display='none'; if(data.action==='clearKids') kids=[]; renderKids(); });
+            fetch(WEB_APP_URL, { 
+                method:'POST', 
+                headers:{'Content-Type':'text/plain;charset=utf-8'}, 
+                body: JSON.stringify(data) 
+            })
+            .then(r => r.json())
+            .then(res => { 
+                document.getElementById('loader').style.display='none'; 
+                if(data.action==='clearKids') { kids=[]; renderKids(); } 
+            })
+            .catch(e => {
+                alert("خطأ في الإرسال للإكسيل");
+                document.getElementById('loader').style.display='none';
+            });
         }
+
         function sendTele(id, name) {
             if(notified.has(id)) return; notified.add(id);
             const msg = `🚨 انتهى وقت "${name}" 🦆`;
             fetch(`https://api.telegram.org/bot8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY/sendMessage?chat_id=996279899&text=${encodeURIComponent(msg)}`)
             .then(()=> syncAction({action:'markTelegramSent', id: id}));
         }
+
         function addChild(m) {
             const name = document.getElementById('childNameInput').value.trim(), c = document.getElementById('cashierName').value.trim() || "غير معروف";
             if(!name) return alert('اكتب الاسم');
@@ -76,7 +92,9 @@
             kids.push(nk); renderKids(); syncAction({action:'addKid', kid:nk}); document.getElementById('childNameInput').value='';
             document.getElementById('alarmAudio').play().then(()=> {document.getElementById('alarmAudio').pause(); document.getElementById('alarmAudio').currentTime=0;});
         }
+
         function addCustom() { let m = parseInt(document.getElementById('customMinutesInput').value); if(m>0) addChild(m); }
+
         function updateState(id, s) {
             const k = kids.find(x=>x.id===id);
             if(k) {
@@ -85,6 +103,7 @@
                 k.status = s; renderKids(); syncAction({action:'updateKid', kid:k});
             }
         }
+
         function renderKids() {
             let h='', alarm=false, now=Date.now();
             kids.forEach(k=> {
