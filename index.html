@@ -66,7 +66,8 @@
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec"; 
+        // ضع الرابط الخاص بك هنا بين علامات التنصيص
+        const WEB_APP_URL = "ضع_الرابط_الجديد_هنا"; 
         
         let kids = [];
         
@@ -75,14 +76,7 @@
                 const response = await fetch(WEB_APP_URL + "?action=getKidsArea");
                 const result = await response.json();
                 if(result.success) { 
-                    // دمج البيانات من السيرفر مع الاحتفاظ بالتايمر المحلي لو السيرفر جاب 0
-                    kids = result.data.map(serverKid => {
-                        const localKid = kids.find(k => k.id === serverKid.id);
-                        if (localKid && serverKid.endTimeStamp === 0) {
-                            serverKid.endTimeStamp = localKid.endTimeStamp;
-                        }
-                        return serverKid;
-                    });
+                    kids = result.data;
                     renderKids(); 
                 }
             } catch(e) { console.log("تأخر في جلب البيانات"); }
@@ -93,6 +87,7 @@
             loader.style.display = 'block';
             fetch(WEB_APP_URL, { 
                 method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(actionData) 
             }).then(() => { loader.style.display = 'none'; }).catch(() => { loader.style.display = 'none'; });
         }
@@ -141,13 +136,19 @@
         function updateKidState(id, newStatus) {
             const kid = kids.find(k => k.id === id);
             if (kid) {
-                kid.status = newStatus;
-                if(newStatus === 'active') { 
-                    let pausedDiff = kid.endTimeStamp - Date.now();
-                    kid.endTimeStamp = Date.now() + pausedDiff; 
+                if (newStatus === 'received') {
+                    // نحفظ الوقت المتبقي عشان لو عملنا استئناف
+                    kid.timeLeftPaused = kid.endTimeStamp - Date.now();
+                    kid.status = newStatus;
+                } else if (newStatus === 'active') {
+                    // نرجع الوقت من مطرح ما وقفنا
+                    kid.endTimeStamp = Date.now() + (kid.timeLeftPaused || 0);
                     let newEnd = new Date(kid.endTimeStamp);
                     kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    kid.status = newStatus;
                     kid.telegramSent = false;
+                } else {
+                    kid.status = newStatus; // Archived
                 }
                 renderKids(); 
                 syncAction({ action: 'updateKid', kid: kid });
@@ -213,7 +214,7 @@
             else if (!isAlarmNeeded) { alarm.pause(); alarm.currentTime = 0; }
         }
 
-        setInterval(fetchKids, 10000);
+        setInterval(fetchKids, 8000);
         setInterval(renderKids, 1000); 
         fetchKids();
     </script>
