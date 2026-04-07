@@ -66,7 +66,7 @@
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        const WEB_APP_URL = https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec; 
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec"; 
         
         let kids = [];
         
@@ -74,7 +74,17 @@
             try {
                 const response = await fetch(WEB_APP_URL + "?action=getKidsArea");
                 const result = await response.json();
-                if(result.success) { kids = result.data; renderKids(); }
+                if(result.success) { 
+                    // دمج البيانات من السيرفر مع الاحتفاظ بالتايمر المحلي لو السيرفر جاب 0
+                    kids = result.data.map(serverKid => {
+                        const localKid = kids.find(k => k.id === serverKid.id);
+                        if (localKid && serverKid.endTimeStamp === 0) {
+                            serverKid.endTimeStamp = localKid.endTimeStamp;
+                        }
+                        return serverKid;
+                    });
+                    renderKids(); 
+                }
             } catch(e) { console.log("تأخر في جلب البيانات"); }
         }
 
@@ -83,7 +93,6 @@
             loader.style.display = 'block';
             fetch(WEB_APP_URL, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(actionData) 
             }).then(() => { loader.style.display = 'none'; }).catch(() => { loader.style.display = 'none'; });
         }
@@ -95,7 +104,6 @@
             const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
             
             fetch(url).then(() => {
-                // أول ما التليجرام يتبعت، بنقول للإكسيل يسجل إنها اتبعتت عشان متتكررش
                 syncAction({ action: 'markTelegramSent', id: kidId });
             }).catch(err => {});
         }
@@ -175,10 +183,9 @@
                                </div>`;
                 } else {
                     let timeLeft = kid.endTimeStamp - now;
-                    if(timeLeft <= 0) {
+                    if(timeLeft <= 0 || isNaN(timeLeft)) {
                         stateClass = 'state-danger'; timeDisplay = '❌ انتهى!'; isAlarmNeeded = true;
                         
-                        // هنا مربط الفرس: لو لسه متبعتتش (false)، ابعتها وعلم عليها إنها اتبعتت فوراً محلياً
                         if (!kid.telegramSent) {
                             kid.telegramSent = true; 
                             sendTelegramNotification(kid.id, kid.name || kid.id.split(" - ")[0]);
