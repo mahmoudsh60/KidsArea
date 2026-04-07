@@ -38,11 +38,7 @@
         .state-received { background: #dc2626; } 
         .state-archived { background: #6b7280; }
         
-        @keyframes blink {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
+        @keyframes blink { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         .clear-all-btn { display: block; width: 100%; max-width: 250px; margin: 25px auto; border: 2px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; background: transparent;}
         #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; margin-bottom: 10px; font-size: 12px;}
@@ -65,50 +61,43 @@
     </div>
     
     <div id="loader">يتم الحفظ في الخلفية... ⚡</div>
-    
     <div class="kids-grid" id="kidsContainer"></div>
-    
     <button class="clear-all-btn" onclick="clearAllKids()">🗑️ مسح الكل (نهاية اليوم)</button>
-    
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        const WEB_APP_URL = "ضع_الرابط_الجديد_هنا"; // <--- ضع الرابط الجديد بعد الديبلوى هنا
+        const WEB_APP_URL = https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec; 
         
         let kids = [];
-        let notifiedKids = new Set(); // ذاكرة لمنع تكرار رسائل التليجرام
         
         async function fetchKids() {
             try {
                 const response = await fetch(WEB_APP_URL + "?action=getKidsArea");
                 const result = await response.json();
-                if(result.success) { 
-                    kids = result.data; 
-                    renderKids(); 
-                }
+                if(result.success) { kids = result.data; renderKids(); }
             } catch(e) { console.log("تأخر في جلب البيانات"); }
         }
 
         function syncAction(actionData) {
             const loader = document.getElementById('loader');
             loader.style.display = 'block';
-            
             fetch(WEB_APP_URL, { 
                 method: 'POST', 
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(actionData) 
-            })
-            .then(() => { setTimeout(() => { loader.style.display = 'none'; }, 1000); })
-            .catch(err => { loader.style.display = 'none'; });
+            }).then(() => { loader.style.display = 'none'; }).catch(() => { loader.style.display = 'none'; });
         }
 
-        function sendTelegramNotification(kidName) {
+        function sendTelegramNotification(kidId, kidName) {
             const token = "8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY";
             const chatId = "996279899";
             const message = `🚨 تنبيه! الطفل "${kidName}" وقته خلص في الكيدز إريا 🦆`;
             const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-            fetch(url, {mode: 'no-cors'}).catch(err => {});
+            
+            fetch(url).then(() => {
+                // أول ما التليجرام يتبعت، بنقول للإكسيل يسجل إنها اتبعتت عشان متتكررش
+                syncAction({ action: 'markTelegramSent', id: kidId });
+            }).catch(err => {});
         }
 
         function addChild(minutes) {
@@ -122,12 +111,8 @@
             const kidId = name + " - " + Date.now().toString().slice(-4);
 
             const newKid = {
-                id: kidId, 
-                name: name,
-                duration: minutes, 
-                status: 'active', 
-                cashier: cashier,
-                endTimeStamp: endTimeStamp,
+                id: kidId, name: name, duration: minutes, status: 'active', cashier: cashier,
+                endTimeStamp: endTimeStamp, telegramSent: false,
                 endTimeFormatted: endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
             };
 
@@ -142,10 +127,7 @@
 
         function addCustomChild() {
             const min = parseInt(document.getElementById('customMinutesInput').value);
-            if(min > 0) {
-                addChild(min);
-                document.getElementById('customMinutesInput').value = '';
-            }
+            if(min > 0) { addChild(min); document.getElementById('customMinutesInput').value = ''; }
         }
 
         function updateKidState(id, newStatus) {
@@ -154,10 +136,10 @@
                 kid.status = newStatus;
                 if(newStatus === 'active') { 
                     let pausedDiff = kid.endTimeStamp - Date.now();
-                    kid.endTimeStamp = Date.now() + pausedDiff; // تحديث التايمر الفعلي
+                    kid.endTimeStamp = Date.now() + pausedDiff; 
                     let newEnd = new Date(kid.endTimeStamp);
                     kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    notifiedKids.delete(kid.id); // لو استأنفناه نمسحه من الذاكرة عشان يتبعتله تاني لما يخلص
+                    kid.telegramSent = false;
                 }
                 renderKids(); 
                 syncAction({ action: 'updateKid', kid: kid });
@@ -165,11 +147,8 @@
         }
 
         function clearAllKids() {
-            if(confirm("هل أنت متأكد من مسح جميع البيانات من الشيت؟")) {
-                kids = [];
-                notifiedKids.clear();
-                renderKids();
-                syncAction({ action: 'clearKids' });
+            if(confirm("هل أنت متأكد من مسح جميع البيانات؟")) {
+                kids = []; renderKids(); syncAction({ action: 'clearKids' });
             }
         }
 
@@ -182,36 +161,27 @@
                 alarm.pause(); return;
             }
 
-            let html = '';
-            let isAlarmNeeded = false;
-            const now = Date.now();
+            let html = ''; let isAlarmNeeded = false; const now = Date.now();
 
             kids.forEach(kid => {
                 if(kid.status === 'archived') return; 
-                
-                let stateClass = 'state-good';
-                let timeDisplay = '';
-                let btnHtml = '';
+                let stateClass = 'state-good'; let timeDisplay = ''; let btnHtml = '';
 
                 if(kid.status === 'received') {
-                    stateClass = 'state-received';
-                    timeDisplay = '⏸️ مستلم';
+                    stateClass = 'state-received'; timeDisplay = '⏸️ مستلم';
                     btnHtml = `<div style="display:flex; gap:5px; margin-top: auto;">
                                 <button class="btn-remove" style="background:#facc15; color:#000;" onclick="updateKidState('${kid.id}', 'active')">استئناف</button>
                                 <button class="btn-remove" style="background:#7f1d1d;" onclick="updateKidState('${kid.id}', 'archived')">إنهاء 🔒</button>
                                </div>`;
                 } else {
                     let timeLeft = kid.endTimeStamp - now;
-                    
-                    if(timeLeft <= 0 || isNaN(timeLeft)) { // لو الوقت صفر أو في خطأ
-                        stateClass = 'state-danger'; 
-                        timeDisplay = '❌ انتهى!'; 
-                        isAlarmNeeded = true;
+                    if(timeLeft <= 0) {
+                        stateClass = 'state-danger'; timeDisplay = '❌ انتهى!'; isAlarmNeeded = true;
                         
-                        // هنا الحل لمنع التكرار: نبعت رسالة بس لو الطفل مش في الذاكرة
-                        if (!notifiedKids.has(kid.id)) {
-                            sendTelegramNotification(kid.name || kid.id.split(" - ")[0]);
-                            notifiedKids.add(kid.id);
+                        // هنا مربط الفرس: لو لسه متبعتتش (false)، ابعتها وعلم عليها إنها اتبعتت فوراً محلياً
+                        if (!kid.telegramSent) {
+                            kid.telegramSent = true; 
+                            sendTelegramNotification(kid.id, kid.name || kid.id.split(" - ")[0]);
                         }
                     } else {
                         let m = Math.floor((timeLeft % 3600000) / 60000);
