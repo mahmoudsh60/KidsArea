@@ -3,125 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الكيدز إريا - Amona City 🦆</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>Amona City POS</title>
     <style>
-        :root { --bg: #eef2f5; --card-bg: #ffffff; --text: #1f2937; --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --custom: #facc15; }
-        body { background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; margin: 0; padding: 10px; padding-bottom: 80px;}
-        header { text-align: center; margin-bottom: 15px; border-bottom: 3px solid var(--primary); background: rgba(255,255,255,0.5); border-radius: 0 0 15px 15px; padding: 10px;}
-        header h1 { margin: 0; color: var(--primary); font-weight: 900; font-size: 24px;}
-        .add-section { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
-        .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
-        .input-group input { padding: 12px; border-radius: 10px; border: 2px solid #d1d5db; font-size: 16px; font-weight: bold; text-align: center; width: 100%; }
-        .btn-group { display: flex; gap: 8px; }
-        .btn { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; font-weight: bold; font-size: 14px; color: white; cursor: pointer; transition: 0.2s;}
-        .kids-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .kid-card { padding: 10px; border-radius: 10px; color: white; display: flex; flex-direction: column; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
-        .kid-time { font-size: 26px; font-weight: 900; direction: ltr; margin: 5px 0;}
-        .btn-remove { background: rgba(0,0,0,0.3); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: auto;}
-        .state-good { background: var(--success); } .state-warning { background: var(--warning); color: #000; } .state-danger { background: var(--danger); animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; margin-bottom: 10px; font-size: 12px;}
+        :root { --primary: #2c3e50; --accent: #e67e22; --success: #27ae60; --danger: #c0392b; --bg: #f4f7f6; font-family: 'Segoe UI', Tahoma, sans-serif;}
+        body { background: var(--bg); margin: 0; padding: 0; overflow: hidden; }
+        #login-screen { position: absolute; width: 100%; height: 100vh; background: var(--primary); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: white; padding: 2rem; border-radius: 12px; text-align: center; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .login-box input, .login-box button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 6px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; }
+        .login-box button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; }
+        #main-app { display: none; grid-template-columns: 350px 1fr; height: 100vh; }
+        .cart-area { background: #fff; padding: 1rem; border-left: 2px solid #eee; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        .header-logo { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px; position: relative; }
+        .switch-user-btn { position: absolute; left: 0; top: 0; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .cart-items { flex-grow: 1; overflow-y: auto; }
+        .cart-item { background: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 8px; border: 1px solid #ddd; font-size: 14px; }
+        .cart-summary { border-top: 2px solid #eee; padding-top: 10px; text-align: center; font-size: 22px; font-weight: bold; color: var(--primary); }
+        .btn { width: 100%; padding: 12px; margin-top: 5px; border: none; border-radius: 5px; font-weight: bold; color: white; cursor: pointer; }
+        .btn-print { background: var(--success); font-size: 18px; grid-column: span 2; }
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .products-area { display: grid; grid-template-rows: 1fr 1.2fr 1fr; height: 100vh; background: #ecf0f1; overflow: hidden; }
+        .category-section { padding: 10px; overflow-y: auto; border-bottom: 3px solid #bdc3c7; }
+        .section-title { font-size: 18px; font-weight: bold; color: #34495e; margin-bottom: 8px; border-right: 5px solid var(--accent); padding-right: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+        .card { background: white; padding: 15px 5px; text-align: center; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #ddd; transition: 0.1s;}
+        .card:active { transform: scale(0.95); border-color: var(--accent); }
+        .card h4 { margin: 0; font-size: 14px; } .card p { margin: 5px 0 0; color: var(--success); font-weight: bold; }
+        #addons-modal, #reprint-modal { position: absolute; top: 0; right: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; text-align: center; }
+        .addon-btn { background: #eee; padding: 10px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; margin: 5px; display: inline-block; font-weight: bold; transition: 0.1s;}
+        .addon-btn.selected { border-color: var(--success); background: #d5f5e3; }
+        @media print {
+            body { background: white; } #main-app { display: none !important; }
+            #print-area { display: block !important; width: 100%; }
+            .ticket-horizontal { display: flex; width: 100%; border: 2px solid #000; margin-bottom: 15px; page-break-inside: avoid; }
+            .ticket-main { flex: 2; padding: 10px; text-align: center; }
+            .ticket-stub { flex: 1; padding: 10px; border-right: 2px dashed #000; background: #f9f9f9; text-align: right; font-size: 11px; }
+            .reprint-badge { border: 2px solid red; color: red; padding: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        }
+        #print-area { display: none; }
     </style>
 </head>
 <body>
-    <header><h1>🦆 إدارة الكيدز إريا 🦆</h1></header>
-    <div class="add-section">
-        <input type="text" id="cashierName" placeholder="اسم الموظف" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; text-align: center; font-weight: bold;">
-        <div class="input-group"><input type="text" id="childNameInput" placeholder="اسم الطفل 🦆"><input type="number" id="customMinutesInput" placeholder="دقائق ⏰"></div>
-        <div class="btn-group">
-            <button class="btn" style="background:var(--primary)" onclick="addChild(30)">نصف ساعة</button>
-            <button class="btn" style="background:var(--success)" onclick="addChild(60)">ساعة كاملة</button>
-            <button class="btn" style="background:var(--custom);color:#856404" onclick="addCustom()">مخصوص</button>
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Amona City POS</h2>
+            <input type="text" id="username" placeholder="اسم المستخدم">
+            <input type="password" id="password" placeholder="كلمة المرور">
+            <button onclick="login()">دخول</button>
+            <p id="login-msg" style="display:none; color: #e67e22; font-weight: bold;">جاري التحقق...</p>
         </div>
     </div>
-    <div id="loader">مزامنة... ⚡</div>
-    <div class="kids-grid" id="kidsContainer"></div>
-    <button onclick="if(confirm('مسح الكل؟')) syncAction({action:'clearKids'});" style="display:block;width:200px;margin:20px auto;color:red;border:1px solid red;padding:10px;border-radius:10px;background:none">🗑️ مسح الكل</button>
-    <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
+    <div id="main-app">
+        <div class="cart-area">
+            <div class="header-logo">
+                <button class="switch-user-btn" onclick="logout()">🔄 تبديل</button>
+                <h2>Amona City</h2>
+                <p id="cashier-name"></p>
+                <input type="number" id="cust-phone" placeholder="رقم العميل (اختياري)" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:5px;">
+            </div>
+            <div class="cart-items" id="cart"></div>
+            <div class="cart-summary">الإجمالي: <span id="total">0</span> ج</div>
+            <button class="btn btn-print" onclick="processOrder()">🧾 تأكيد وطباعة</button>
+            <div class="actions-grid">
+                <button class="btn" style="background:#e67e22" onclick="cartData=[]; renderCart();">🗑️ مسح</button>
+                <button class="btn" style="background:#8e44ad" onclick="openReprintModal()">🖨️ إعادة طباعة</button>
+                <button class="btn" style="background:var(--primary); grid-column: span 2;" onclick="closeShift()">🔒 تقفيل الوردية</button>
+            </div>
+        </div>
+        <div class="products-area">
+            <div class="category-section">
+                <div class="section-title">🎡 الملاهي والتذاكر</div>
+                <div class="grid" id="malahy-grid"></div>
+            </div>
+            <div class="category-section" style="background: #fef9e7;">
+                <div class="section-title">🍔 المطعم (بيتزا وكريب)</div>
+                <div class="grid" id="rest-grid"></div>
+            </div>
+            <div class="category-section" style="background: #e8f8f5;">
+                <div class="section-title">☕ الكافيتريا</div>
+                <div class="grid" id="cafe-grid"></div>
+            </div>
+        </div>
+    </div>
+    <div id="addons-modal">
+        <div class="modal-content">
+            <h3 id="modal-item-name"></h3>
+            <div id="size-options" style="display:none; margin-bottom:10px;">
+                <label><input type="radio" name="size" value="متوسط" checked> وسط</label> 
+                <label><input type="radio" name="size" value="لارج"> لارج (+20ج)</label>
+            </div>
+            <div id="addons-list"></div>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-print" style="width: 48%; display: inline-block;" onclick="confirmAddonItem()">✅ إضافة</button>
+                <button class="btn" style="background:red; width: 48%; display: inline-block;" onclick="document.getElementById('addons-modal').style.display='none'">❌ إلغاء</button>
+            </div>
+        </div>
+    </div>
+    <div id="reprint-modal"><div class="modal-content"><h3>سجل الأوردرات</h3><div id="reprint-list"></div><button class="btn" style="background:grey" onclick="document.getElementById('reprint-modal').style.display='none'">إغلاق</button></div></div>
+    <div id="print-area"></div>
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec";
-        let kids = [], notified = new Set();
-        
-        async function fetchKids() {
+        let currentCashier = "", cartData = [], tempItem = null, selectedAddons = [], recentOrders = [], activeAddonsList = [];
+        const items = {
+            malahy: [{name:"تذكرة بـ 30", price:30, sec:"ملاهي"}, {name:"تذكرة بـ 50", price:50, sec:"ملاهي"}, {name:"تذكرة بـ 100", price:100, sec:"ملاهي"}],
+            cafe: [{name:"شاي", price:15, sec:"كافيتريا"}, {name:"قهوة تركي", price:25, sec:"كافيتريا"}, {name:"بيبسي", price:20, sec:"كافيتريا"}, {name:"عصير", price:35, sec:"كافيتريا"}],
+            rest: [{name:"بيتزا مارجريتا", price:60, sec:"مطعم", type:"pizza"}, {name:"بيتزا فراخ", price:85, sec:"مطعم", type:"pizza"}, {name:"كريب شاورما", price:70, sec:"مطعم", type:"general"}, {name:"برجر لحم", price:80, sec:"مطعم", type:"general"}, {name:"فشار صغير", price:10, sec:"مطعم", type:"popcorn"}, {name:"فشار كبير", price:20, sec:"مطعم", type:"popcorn"}, {name:"إندومي", price:15, sec:"مطعم", type:"indomie"}]
+        };
+        const addonsDb = {
+            pizza: [{name:"اكسترا جبنة", price:15}, {name:"مشروم", price:15}],
+            popcorn: [{name:"طعم جبنة", price:5}, {name:"طعم كراميل", price:5}, {name:"شطة وليمون", price:5}, {name:"ملح وخل", price:5}],
+            indomie: [{name:"بهارات زيادة", price:5}, {name:"شطة زيادة", price:5}],
+            general: [{name:"كاتشب", price:5}, {name:"مايونيز", price:5}, {name:"صوص شيدر", price:10}]
+        };
+
+        async function login() {
+            const u = document.getElementById('username').value, p = document.getElementById('password').value;
+            if(!u || !p) return; document.getElementById('login-msg').style.display="block";
             try {
-                const res = await fetch(WEB_APP_URL + "?action=getKidsArea");
-                const d = await res.json();
-                if(d.success) {
-                    kids = d.data.map(sk => {
-                        const lk = kids.find(k => k.id === sk.id);
-                        if(lk && sk.endTimeStamp === 0) sk.endTimeStamp = lk.endTimeStamp;
-                        if(sk.telegramSent) notified.add(sk.id);
-                        return sk;
-                    });
-                    renderKids();
-                }
-            } catch(e) { console.log("خطأ تحديث"); }
+                const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({action:'login', username:u, password:p}) });
+                const data = await res.json();
+                if(data.success) { currentCashier=u; document.getElementById('login-screen').style.display='none'; document.getElementById('main-app').style.display='grid'; document.getElementById('cashier-name').innerText="الكاشير: "+u; loadProducts(); }
+                else alert("بيانات خاطئة");
+            } catch(e) { alert("خطأ اتصال"); }
+            document.getElementById('login-msg').style.display="none";
         }
 
-        function syncAction(data) {
-            document.getElementById('loader').style.display='block';
-            fetch(WEB_APP_URL, { 
-                method:'POST', 
-                headers:{'Content-Type':'text/plain;charset=utf-8'}, 
-                body: JSON.stringify(data) 
-            })
-            .then(r => r.json())
-            .then(res => { 
-                document.getElementById('loader').style.display='none'; 
-                if(data.action==='clearKids') { kids=[]; renderKids(); } 
-            })
-            .catch(e => {
-                alert("خطأ في الإرسال للإكسيل");
-                document.getElementById('loader').style.display='none';
-            });
+        function logout() { currentCashier=""; document.getElementById('main-app').style.display='none'; document.getElementById('login-screen').style.display='flex'; }
+        
+        function loadProducts() {
+            const render = (arr, id) => { let h=''; arr.forEach(i=> h+=`<div class="card" onclick='handleClick(${JSON.stringify(i)})'><h4>${i.name}</h4><p>${i.price}ج</p></div>`); document.getElementById(id).innerHTML=h; };
+            render(items.malahy, 'malahy-grid'); render(items.rest, 'rest-grid'); render(items.cafe, 'cafe-grid');
         }
 
-        function sendTele(id, name) {
-            if(notified.has(id)) return; notified.add(id);
-            const msg = `🚨 انتهى وقت "${name}" 🦆`;
-            fetch(`https://api.telegram.org/bot8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY/sendMessage?chat_id=996279899&text=${encodeURIComponent(msg)}`)
-            .then(()=> syncAction({action:'markTelegramSent', id: id}));
-        }
-
-        function addChild(m) {
-            const name = document.getElementById('childNameInput').value.trim(), c = document.getElementById('cashierName').value.trim() || "غير معروف";
-            if(!name) return alert('اكتب الاسم');
-            const ets = Date.now() + (m * 60000), etf = new Date(ets).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
-            const nk = { id: name+"-"+Date.now().toString().slice(-4), name:name, duration:m, status:'active', cashier:c, endTimeStamp:ets, telegramSent:false, endTimeFormatted:etf };
-            kids.push(nk); renderKids(); syncAction({action:'addKid', kid:nk}); document.getElementById('childNameInput').value='';
-            document.getElementById('alarmAudio').play().then(()=> {document.getElementById('alarmAudio').pause(); document.getElementById('alarmAudio').currentTime=0;});
-        }
-
-        function addCustom() { let m = parseInt(document.getElementById('customMinutesInput').value); if(m>0) addChild(m); }
-
-        function updateState(id, s) {
-            const k = kids.find(x=>x.id===id);
-            if(k) {
-                if(s==='received') k.paused = k.endTimeStamp - Date.now();
-                else if(s==='active') { k.endTimeStamp = Date.now() + (k.paused||0); k.endTimeFormatted = new Date(k.endTimeStamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}); notified.delete(id); }
-                k.status = s; renderKids(); syncAction({action:'updateKid', kid:k});
+        function handleClick(item) {
+            if(item.sec==="مطعم") {
+                tempItem={...item}; selectedAddons=[]; 
+                document.getElementById('modal-item-name').innerText=item.name;
+                document.getElementById('size-options').style.display=(item.type==='pizza'?'block':'none');
+                
+                activeAddonsList = (addonsDb[item.type] || addonsDb.general);
+                let h='';
+                // الحل الجذري للإضافات: تمرير الـ index فقط عشان نتفادى مشكلة الـ HTML Quotes
+                activeAddonsList.forEach((a,idx)=> h+=`<div class="addon-btn" id="abtn-${idx}" onclick="toggleAddon(${idx})">${a.name} (+${a.price})</div>`);
+                
+                document.getElementById('addons-list').innerHTML=h; 
+                document.getElementById('addons-modal').style.display='flex';
+            } else {
+                addToCart({...item, qty:1, isCombo:0});
             }
         }
 
-        function renderKids() {
-            let h='', alarm=false, now=Date.now();
-            kids.forEach(k=> {
-                if(k.status==='archived') return;
-                let sc='state-good', td='', btns='';
-                if(k.status==='received') { sc='state-received'; td='⏸️ مستلم'; btns=`<button class="btn-remove" style="background:orange" onclick="updateState('${k.id}','active')">استئناف</button><button class="btn-remove" style="background:red" onclick="updateState('${k.id}','archived')">إنهاء</button>`; }
-                else {
-                    let diff = k.endTimeStamp - now;
-                    if(diff<=0) { sc='state-danger'; td='❌ انتهى!'; alarm=true; sendTele(k.id, k.name); }
-                    else { let m=Math.floor(diff/60000), s=Math.floor((diff%60000)/1000); td=`${m}:${s.toString().padStart(2,'0')}`; if(m<5) sc='state-warning'; }
-                    btns=`<button class="btn-remove" onclick="updateState('${k.id}','received')">استلام ✔️</button>`;
-                }
-                h+=`<div class="kid-card ${sc}"><h3>${k.name}</h3><div class="kid-time">${td}</div><div style="font-size:10px">خروج: ${k.endTimeFormatted}</div>${btns}</div>`;
-            });
-            document.getElementById('kidsContainer').innerHTML=h || "لا يوجد أطفال";
-            const a = document.getElementById('alarmAudio'); if(alarm && a.paused) a.play(); else if(!alarm) {a.pause(); a.currentTime=0;}
+        function toggleAddon(idx) {
+            const btn = document.getElementById(`abtn-${idx}`);
+            const addon = activeAddonsList[idx];
+            const ex = selectedAddons.findIndex(a=>a.name===addon.name);
+            if(ex > -1) { 
+                selectedAddons.splice(ex,1); 
+                btn.classList.remove('selected'); 
+            } else { 
+                selectedAddons.push(addon); 
+                btn.classList.add('selected'); 
+            }
         }
-        setInterval(fetchKids, 10000); setInterval(renderKids, 1000); fetchKids();
+
+        function confirmAddonItem() {
+            let n = tempItem.name, p = tempItem.price;
+            if(tempItem.type==='pizza' && document.querySelector('input[name="size"]:checked').value==='لارج') { n+=" (لارج)"; p+=20; }
+            if(selectedAddons.length>0) { n+=` [${selectedAddons.map(a=>a.name).join('+')}]`; selectedAddons.forEach(a=>p+=a.price); }
+            addToCart({name:n, price:p, sec:tempItem.sec, qty:1, isCombo:0});
+            document.getElementById('addons-modal').style.display='none';
+        }
+
+        function addToCart(i) { let ex=cartData.find(x=>x.name===i.name); if(ex && i.sec!=='ملاهي') ex.qty++; else cartData.push(i); renderCart(); }
+        
+        function renderCart() {
+            let h='', t=0; cartData.forEach((i,idx)=> {
+                let rt = i.price*(i.qty+i.isCombo); t+=rt;
+                h+=`<div class="cart-item"><b>${i.name}</b> - ${rt}ج<br>`;
+                if(i.sec==='ملاهي') h+=`فردي:<input type="number" value="${i.qty}" style="width:35px" onchange="cartData[${idx}].qty=Number(this.value);renderCart()"> مجمع:<input type="number" value="${i.isCombo}" style="width:35px" onchange="cartData[${idx}].isCombo=Number(this.value);renderCart()">`;
+                else h+=`كمية:<input type="number" value="${i.qty}" style="width:40px" onchange="cartData[${idx}].qty=Number(this.value);renderCart()">`;
+                h+=`<button onclick="cartData.splice(${idx},1);renderCart()" style="float:left;background:red;color:white;border:none;border-radius:3px">X</button></div>`;
+            });
+            document.getElementById('cart').innerHTML=h; document.getElementById('total').innerText=t;
+        }
+
+        async function processOrder() {
+            if(cartData.length===0) return; const btn=document.querySelector('.btn-print'), ph=document.getElementById('cust-phone').value;
+            btn.innerText="جاري..."; btn.disabled=true;
+            try {
+                const res = await fetch(WEB_APP_URL, { method:'POST', body: JSON.stringify({action:'submitOrder', cashier:currentCashier, phone:ph, items: cartData.map(x=>({section:x.sec, name:x.name, qty:x.qty+x.isCombo, totalPrice:x.price*(x.qty+x.isCombo)}))}) });
+                const d = await res.json();
+                if(d.success) {
+                    recentOrders.unshift({serial:d.serial, date:d.date, time:d.time, phone:ph, items:JSON.parse(JSON.stringify(cartData))});
+                    if(recentOrders.length>10) recentOrders.pop();
+                    buildPrint(d.serial, d.date, d.time, ph, false); window.print(); cartData=[]; renderCart(); document.getElementById('cust-phone').value='';
+                }
+            } catch(e) { alert("خطأ اتصال"); }
+            btn.innerText="🧾 تأكيد وطباعة"; btn.disabled=false;
+        }
+
+        function openReprintModal() {
+            let h=''; recentOrders.forEach((o,i)=> h+=`<div style="border-bottom:1px solid #ddd;padding:5px">${o.serial} - ${o.time} <button onclick="doReprint(${i})" style="background:green;color:white;border:none;padding:5px;cursor:pointer">🖨️</button></div>`);
+            document.getElementById('reprint-list').innerHTML=h || "لا يوجد أوردرات"; document.getElementById('reprint-modal').style.display='flex';
+        }
+
+        async function doReprint(idx) {
+            const o = recentOrders[idx];
+            try {
+                await fetch(WEB_APP_URL, { method:'POST', body: JSON.stringify({action:'reprintOrder', cashier:currentCashier, originalSerial:o.serial, phone:o.phone, items:o.items}) });
+                const old = cartData; cartData=o.items; buildPrint(o.serial, "إعادة", o.time, o.phone, true); window.print(); cartData=old;
+                document.getElementById('reprint-modal').style.display='none';
+            } catch(e) { alert("فشل الإعادة"); }
+        }
+
+        function buildPrint(s, d, t, ph, r) {
+            let h=''; const rb = r?'<div class="reprint-badge">نسخة معادة - Reprint</div>':'';
+            cartData.filter(x=>x.sec==='ملاهي').forEach(i=> {
+                for(let j=0;j<i.qty;j++) h+=`<div class="ticket-horizontal"><div class="ticket-main">${rb}<h2>Amona City</h2><p>#${s}</p><h3>${i.name}</h3><p>${i.price}ج</p><p>${d} ${t}</p></div><div class="ticket-stub"><b>كعب #${s}</b><p>${i.name}</p><div style="border-top:1px solid #000;margin-top:20px">إمضاء:</div><p>عميل: ${ph||'بدون'}</p></div></div>`;
+                if(i.isCombo>0) h+=`<div class="ticket-horizontal"><div class="ticket-main">${rb}<h2>Amona City</h2><p>#${s}</p><h3>عروض ${i.name}</h3><p>عدد:${i.isCombo}</p></div><div class="ticket-stub"><b>كعب #${s}</b><p>عروض:${i.isCombo}</p><div style="border-top:1px solid #000;margin-top:20px">الرقم: ${ph||'بدون'}</div></div></div>`;
+            });
+            const food = cartData.filter(x=>x.sec!=='ملاهي');
+            if(food.length>0) {
+                let rows=''; food.forEach(f=> rows+=`<tr><td>${f.name}</td><td>${f.qty}</td></tr>`);
+                h+=`<div style="text-align:center">${rb}<h2>أوردر تحضير Amona City</h2><h1>#${s}</h1><table style="width:100%;border-collapse:collapse"><tr><th>صنف</th><th>كمية</th></tr>${rows}</table><p>${t} | ${currentCashier}</p></div>`;
+            }
+            document.getElementById('print-area').innerHTML=h;
+        }
+
+        async function closeShift() { if(confirm("تقفيل الوردية؟")) { await fetch(WEB_APP_URL, {method:'POST', body: JSON.stringify({action:'closeShift', cashier:currentCashier, mTotal:0, rTotal:0, cTotal:0, safeTotal:0})}); logout(); } }
     </script>
 </body>
 </html>
