@@ -3,346 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الكيدز إريا 🦆</title>
+    <title>إدارة الكيدز إريا - Amona City 🦆</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #eef2f5; --card-bg: #ffffff; --text: #1f2937;
-            --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --custom: #facc15;
-        }
-        body { background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; margin: 0; padding: 10px; padding-bottom: 80px; overflow-x: hidden;}
-        header { text-align: center; margin-bottom: 15px; border-bottom: 3px solid var(--primary); padding-bottom: 10px; background: rgba(255,255,255,0.5); border-radius: 0 0 15px 15px; padding-top: 5px;}
+        :root { --bg: #eef2f5; --card-bg: #ffffff; --text: #1f2937; --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --custom: #facc15; }
+        body { background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; margin: 0; padding: 10px; padding-bottom: 80px;}
+        header { text-align: center; margin-bottom: 15px; border-bottom: 3px solid var(--primary); background: rgba(255,255,255,0.5); border-radius: 0 0 15px 15px; padding: 10px;}
         header h1 { margin: 0; color: var(--primary); font-weight: 900; font-size: 24px;}
-        
-        .add-section { background: var(--card-bg); padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .input-group { margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
-        
-        .input-group input#childNameInput { flex: 2; min-width: 150px; padding: 12px; border-radius: 10px; border: 2px solid #d1d5db; font-size: 16px; font-family: inherit; font-weight: bold; box-sizing: border-box; text-align: center; }
-        .input-group input#customMinutesInput { flex: 1; max-width: 100px; padding: 12px; border-radius: 10px; border: 2px solid var(--custom); font-size: 16px; font-family: inherit; font-weight: bold; box-sizing: border-box; text-align: center; color: #856404; background-color: #fff3cd;}
-        
-        .input-group input:focus { outline: none; border-color: var(--primary); }
-        .input-group input#customMinutesInput:focus { border-color: #856404; }
-        
-        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { flex: 1; min-width: 90px; padding: 12px 5px; border: none; border-radius: 10px; font-family: inherit; font-weight: bold; font-size: 14px; cursor: pointer; color: white; transition: 0.2s; text-align: center; line-height: 1.2;}
-        .btn:active { transform: scale(0.98); }
-        .btn-15 { background-color: var(--primary); }
-        .btn-60 { background-color: var(--success); }
-        .btn-custom { background-color: var(--custom); color: #856404; }
-        
-        .search-container { text-align: center; margin-bottom: 15px; }
-        #searchKidInput { width: 120px; padding: 10px 15px; border-radius: 20px; border: 2px solid var(--primary); font-family: inherit; font-size: 14px; text-align: center; transition: width 0.4s ease-in-out; outline: none; background: white;}
-        #searchKidInput:focus { width: 80%; max-width: 300px; border-color: var(--warning); }
-
+        .add-section { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
+        .input-group { display: flex; gap: 5px; margin-bottom: 10px; }
+        .input-group input { padding: 12px; border-radius: 10px; border: 2px solid #d1d5db; font-size: 16px; font-weight: bold; text-align: center; }
+        #childNameInput { flex: 2; } #customMinutesInput { flex: 1; border-color: var(--custom); background: #fff3cd; color: #856404; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; font-weight: bold; font-size: 14px; color: white; cursor: pointer; text-align: center;}
+        .btn-15 { background: var(--primary); } .btn-60 { background: var(--success); } .btn-custom { background: var(--custom); color: #856404; }
         .kids-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        
-        .kid-card { padding: 8px; border-radius: 10px; color: white; display: flex; flex-direction: column; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.3s; }
-        .kid-name { font-size: 16px; font-weight: 900; margin: 0 0 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.5); padding-bottom: 3px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .kid-time { font-size: 26px; font-weight: 900; text-align: center; margin: 5px 0; direction: ltr; }
-        .kid-end { font-size: 11px; text-align: center; margin-bottom: 10px; opacity: 0.9; white-space: nowrap;}
-        
-        .btn-remove { background: rgba(0,0,0,0.3); color: white; border: none; padding: 10px 5px; border-radius: 6px; font-family: inherit; font-weight: bold; font-size: 13px; cursor: pointer; width: 100%; margin-top: auto; }
-        
-        /* حالات الألوان */
-        .state-good { background-color: var(--success); }
-        .state-warning { background-color: var(--warning); color: #000; }
-        .state-warning .btn-remove { background: rgba(0,0,0,0.1); color: #000; }
-        .state-danger { background-color: var(--danger); animation: blink 1.5s infinite; }
-        
-        /* حالة الاستلام المؤقت (أحمر ثابت بدون وميض) */
-        .state-received { background-color: #dc2626; } 
-        /* حالة الأرشيف (رمادي للمرجعية) */
-        .state-archived { background-color: #6b7280; opacity: 0.9; }
-
-        @keyframes blink {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        .clear-all-btn { display: block; width: 100%; max-width: 250px; margin: 25px auto 0; background: transparent; border: 2px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 10px; font-family: inherit; font-weight: bold; font-size: 14px; cursor: pointer; }
-    
-        @media (min-width: 600px) {
-            .kids-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-            .kid-card { padding: 12px; }
-            .kid-name { font-size: 18px; }
-            .kid-time { font-size: 30px; }
-            .kid-end { font-size: 12px; }
-            body { padding: 20px; }
-        }
+        .kid-card { padding: 10px; border-radius: 10px; color: white; display: flex; flex-direction: column; text-align: center; }
+        .kid-name { font-size: 16px; font-weight: 900; margin: 0 0 5px; border-bottom: 1px dashed rgba(255,255,255,0.5); padding-bottom: 3px; }
+        .kid-time { font-size: 26px; font-weight: 900; direction: ltr; margin: 5px 0;}
+        .btn-remove { background: rgba(0,0,0,0.3); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: auto;}
+        .state-good { background: var(--success); } .state-warning { background: var(--warning); color: #000; } .state-danger { background: var(--danger); } .state-received { background: #dc2626; } .state-archived { background: #6b7280; }
+        .clear-all-btn { display: block; width: 100%; max-width: 250px; margin: 25px auto; border: 2px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; background: transparent;}
+        #loader { text-align: center; font-weight: bold; color: var(--primary); display: none; }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>🦆 إدارة الكيدز إريا 🦆</h1>
-    </header>
-
+    <header><h1>🦆 إدارة الكيدز إريا 🦆</h1></header>
+    
     <div class="add-section">
+        <input type="text" id="cashierName" placeholder="اسم الكاشير" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; text-align: center; font-weight: bold;">
         <div class="input-group">
-            <input type="text" id="childNameInput" placeholder="اسم الطفل 🦆" onkeypress="handleEnter(event)">
-            <input type="number" id="customMinutesInput" placeholder="دقائق ⏰" min="1">
+            <input type="text" id="childNameInput" placeholder="اسم الطفل 🦆">
+            <input type="number" id="customMinutesInput" placeholder="دقائق ⏰">
         </div>
         <div class="btn-group">
-            <button class="btn btn-15" onclick="addChild(15)">تذكرة 30 ج<br>(15 دقيقة)</button>
-            <button class="btn btn-60" onclick="addChild(60)">تذكرة 50 ج<br>(ساعة كاملة)</button>
-            <button class="btn btn-custom" onclick="addCustomChild()">وقت مخصوص 🦆<br>(اكتب الدقائق)</button>
+            <button class="btn btn-15" onclick="addChild(30)">نصف ساعة</button>
+            <button class="btn btn-60" onclick="addChild(60)">ساعة كاملة</button>
+            <button class="btn btn-custom" onclick="addCustomChild()">مخصوص</button>
         </div>
     </div>
-
-    <div class="search-container">
-        <input type="text" id="searchKidInput" placeholder="🔍 بحث بالاسم..." oninput="renderKids()">
-    </div>
-
+    <div id="loader">جاري المزامنة مع الإكسيل... ⏳</div>
     <div class="kids-grid" id="kidsContainer"></div>
-
-    <button class="clear-all-btn" onclick="clearAllKids()">🗑️ مسح الكل (نهاية اليوم) 🦆</button>
-
+    <button class="clear-all-btn" onclick="clearAllKids()">🗑️ مسح الكل (نهاية اليوم)</button>
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        let kids = JSON.parse(localStorage.getItem('kidsArea_data_v3')) || []; 
-        let wakeLock = null;
-        let timerInterval = null;
-
-        // دالة إرسال الإشعار للتليجرام
-        function sendTelegramNotification(kidName) {
-            const token = "8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY";
-            const chatId = "996279899";
-            const message = `🚨 تنبيه! الطفل "${kidName}" وقته خلص في الكيدز إريا 🦆`;
-            const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-            
-            fetch(url).catch(err => console.error("مشكلة في إرسال التليجرام:", err));
-        }
-
-        async function requestWakeLock() {
+        const WEB_APP_URL = "ضع_الرابط_الجديد_هنا"; // ضع رابط السكريبت هنا
+        let kids = [];
+        
+        async function fetchKids() {
             try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) { console.error(`${err.name}, ${err.message}`); }
+                const response = await fetch(WEB_APP_URL + "?action=getKidsArea");
+                const result = await response.json();
+                if(result.success) { kids = result.data; renderKids(); }
+            } catch(e) { console.log("خطأ في المزامنة"); }
         }
 
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
-            }
-        });
-
-        function initAudioAndWakeLock() {
-            const alarm = document.getElementById('alarmAudio');
-            alarm.play().then(() => {
-                alarm.pause();
-                alarm.currentTime = 0;
-            }).catch(e => console.log("Audio waiting..."));
-            requestWakeLock();
-        }
-
-        function handleEnter(e) { if (e.key === 'Enter') addChild(15); }
-
-        function performAdd(name, minutes) {
-            initAudioAndWakeLock();
-            const now = new Date();
-            const endTime = new Date(now.getTime() + minutes * 60000); 
-            const endTimeFormatted = endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
-            const newKid = {
-                id: Date.now().toString(),
-                name: name,
-                status: 'active',
-                endTimeStamp: endTime.getTime(),
-                endTimeFormatted: endTimeFormatted,
-                timeLeftPaused: 0,
-                telegramSent: false // متعلم بـ false عشان يتبعتله الرسالة أول ما يخلص
-            };
-
-            kids.push(newKid);
-            saveData();
-            document.getElementById('searchKidInput').value = '';
-            renderKids();
+        async function syncAction(actionData) {
+            document.getElementById('loader').style.display = 'block';
+            await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(actionData) });
+            await fetchKids();
+            document.getElementById('loader').style.display = 'none';
         }
 
         function addChild(minutes) {
-            const nameInput = document.getElementById('childNameInput');
-            const name = nameInput.value.trim();
-            if (!name) return alert('الرجاء كتابة اسم الطفل أولاً! 🦆');
-            performAdd(name, minutes);
-            nameInput.value = ''; 
+            const name = document.getElementById('childNameInput').value.trim();
+            const cashier = document.getElementById('cashierName').value.trim() || "غير معروف";
+            if (!name) return alert('الرجاء كتابة اسم الطفل!');
+            
+            const now = new Date();
+            const endTime = new Date(now.getTime() + minutes * 60000);
+            const kidId = name + " - " + Date.now().toString().slice(-4);
+
+            const newKid = {
+                id: kidId, duration: minutes, status: 'active', cashier: cashier,
+                endTimeFormatted: endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+            };
+
+            syncAction({ action: 'addKid', kid: newKid });
+            document.getElementById('childNameInput').value = '';
         }
 
         function addCustomChild() {
-            const nameInput = document.getElementById('childNameInput');
-            const minutesInput = document.getElementById('customMinutesInput');
-            const name = nameInput.value.trim();
-            const minutes = parseInt(minutesInput.value);
-
-            if (!name) return alert('الرجاء كتابة اسم الطفل! 🦆');
-            if (!minutes || minutes <= 0) return alert('الرجاء كتابة عدد دقائق صحيح! ⏰');
-
-            performAdd(name, minutes);
-            nameInput.value = '';
-            minutesInput.value = '';
+            const min = parseInt(document.getElementById('customMinutesInput').value);
+            if(min > 0) addChild(min);
         }
 
-        function receiveKid(id) {
+        function updateKidState(id, newStatus) {
             const kid = kids.find(k => k.id === id);
             if (kid) {
-                kid.status = 'received';
-                kid.timeLeftPaused = kid.endTimeStamp - new Date().getTime();
-                saveData();
-                renderKids();
-            }
-        }
-
-        function resumeKid(id) {
-            const kid = kids.find(k => k.id === id);
-            if (kid) {
-                kid.status = 'active';
-                kid.endTimeStamp = new Date().getTime() + kid.timeLeftPaused;
-                kid.telegramSent = false; // بنصفر التليجرام عشان يبعت تاني لو الوقت خلص بعد الاستئناف
-                saveData();
-                renderKids();
-            }
-        }
-
-        function archiveKid(id) {
-            const kid = kids.find(k => k.id === id);
-            if (kid) {
-                kid.status = 'archived';
-                saveData();
-                renderKids();
+                kid.status = newStatus;
+                if(newStatus === 'active') { // استئناف
+                    let pausedDiff = kid.endTimeStamp - Date.now();
+                    let newEnd = new Date(Date.now() + pausedDiff);
+                    kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                }
+                syncAction({ action: 'updateKid', kid: kid });
             }
         }
 
         function clearAllKids() {
-            if (kids.length === 0) return;
-            if (confirm("هل أنتي متأكدة من مسح الجميع؟ (نهاية اليوم) 🦆")) {
-                kids = [];
-                saveData();
-                document.getElementById('searchKidInput').value = '';
-                renderKids();
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('kidsArea_data_v3', JSON.stringify(kids));
+            if(confirm("مسح جميع البيانات من الشيت؟")) syncAction({ action: 'clearKids' });
         }
 
         function renderKids() {
             const container = document.getElementById('kidsContainer');
             const alarm = document.getElementById('alarmAudio');
-            const searchValue = document.getElementById('searchKidInput').value.trim().toLowerCase();
-            
-            if (kids.length === 0) {
-                container.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:#6b7280; font-weight:bold; margin-top:10px;">لا يوجد أطفال بالداخل. 🦆</p>';
-                alarm.pause();
-                alarm.currentTime = 0;
-                return;
-            }
-
             let html = '';
-            const now = new Date().getTime();
             let isAlarmNeeded = false;
-            let needsSave = false; // لو بعتنا تليجرام، هنحتاج نحفظ الداتا
+            const now = Date.now();
 
-            let sortedKids = [...kids].sort((a, b) => {
-                const order = { 'active': 1, 'received': 1, 'archived': 2 };
-                const stateA = a.status || 'active';
-                const stateB = b.status || 'active';
-                if (order[stateA] !== order[stateB]) { return order[stateA] - order[stateB]; }
-                return a.endTimeStamp - b.endTimeStamp;
-            });
+            kids.forEach(kid => {
+                if(kid.status === 'archived') return; // لا نعرض المؤرشف
+                
+                let stateClass = 'state-good';
+                let timeDisplay = '';
+                let btnHtml = '';
 
-            if (searchValue) {
-                sortedKids = sortedKids.filter(kid => kid.name.toLowerCase().includes(searchValue));
-            }
-
-            if (sortedKids.length === 0 && searchValue) {
-                container.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color:#6b7280; font-weight:bold; margin-top:10px;">لم يتم العثور على طفل بهذا الاسم. 🦆</p>';
-                return;
-            }
-
-            sortedKids.forEach(kid => {
-                const status = kid.status || 'active';
-
-                if (status === 'archived') {
-                    html += `
-                        <div class="kid-card state-archived">
-                            <h3 class="kid-name">${kid.name}</h3>
-                            <div class="kid-time" style="font-size:16px; margin: 15px 0;">🔒 تم الإنهاء</div>
-                            <div class="kid-end">دخول: ${kid.endTimeFormatted}</div>
-                            <div style="font-size: 11px; text-align: center; color: #ddd; margin-top: auto;">باقي للمرجعية 🦆</div>
-                        </div>
-                    `;
-                } 
-                else if (status === 'received') {
-                    html += `
-                        <div class="kid-card state-received">
-                            <h3 class="kid-name">${kid.name}</h3>
-                            <div class="kid-time" style="font-size:20px; margin: 10px 0;">⏸️ مستلم</div>
-                            <div class="kid-end">موعده كان: ${kid.endTimeFormatted}</div>
-                            <div style="display:flex; gap:5px; margin-top: auto;">
-                                <button class="btn-remove" style="background:#facc15; color:#000;" onclick="resumeKid('${kid.id}')">↩️ استئناف</button>
-                                <button class="btn-remove" style="background:#7f1d1d;" onclick="archiveKid('${kid.id}')">حذف 🔒</button>
-                            </div>
-                        </div>
-                    `;
-                } 
-                else {
-                    const timeLeft = kid.endTimeStamp - now;
-                    let stateClass = 'state-good';
-                    let timeDisplay = '';
-                    
-                    if (timeLeft <= 0) {
-                        stateClass = 'state-danger';
-                        timeDisplay = '❌ انتهى!';
-                        isAlarmNeeded = true;
-
-                        // إرسال رسالة التليجرام لو لسه متبعتتش
-                        if (!kid.telegramSent) {
-                            sendTelegramNotification(kid.name);
-                            kid.telegramSent = true;
-                            needsSave = true; // ندي إشارة بحفظ الداتا بعد اللوب
-                        }
-
+                if(kid.status === 'received') {
+                    stateClass = 'state-received';
+                    timeDisplay = '⏸️ مستلم';
+                    btnHtml = `<div style="display:flex; gap:5px; margin-top: auto;">
+                                <button class="btn-remove" style="background:#facc15; color:#000;" onclick="updateKidState('${kid.id}', 'active')">استئناف</button>
+                                <button class="btn-remove" style="background:#7f1d1d;" onclick="updateKidState('${kid.id}', 'archived')">إنهاء 🔒</button>
+                               </div>`;
+                } else {
+                    let timeLeft = kid.endTimeStamp - now;
+                    if(timeLeft <= 0) {
+                        stateClass = 'state-danger'; timeDisplay = '❌ انتهى!'; isAlarmNeeded = true;
                     } else {
-                        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                        timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                        if (minutes < 5) { stateClass = 'state-warning'; }
+                        let m = Math.floor((timeLeft % 3600000) / 60000);
+                        let s = Math.floor((timeLeft % 60000) / 1000);
+                        timeDisplay = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                        if(m < 5) stateClass = 'state-warning';
                     }
-
-                    html += `
-                        <div class="kid-card ${stateClass}">
-                            <h3 class="kid-name">${kid.name}</h3>
-                            <div class="kid-time">${timeDisplay}</div>
-                            <div class="kid-end">الخروج: ${kid.endTimeFormatted}</div>
-                            <button class="btn-remove" onclick="receiveKid('${kid.id}')">استلام ✔️</button>
-                        </div>
-                    `;
+                    btnHtml = `<button class="btn-remove" onclick="updateKidState('${kid.id}', 'received')">استلام ✔️</button>`;
                 }
+
+                html += `
+                    <div class="kid-card ${stateClass}">
+                        <h3 class="kid-name">${kid.name}</h3>
+                        <div class="kid-time">${timeDisplay}</div>
+                        <div style="font-size:11px; margin-bottom:10px;">خروج: ${kid.endTimeFormatted}</div>
+                        ${btnHtml}
+                    </div>`;
             });
 
             container.innerHTML = html;
-
-            // حفظ حالة التليجرام عشان ميبعتش آلاف الرسايل
-            if (needsSave) saveData();
-
-            if (isAlarmNeeded) {
-                if (alarm.paused) {
-                    alarm.play().catch(e => console.log("Auto-play wait"));
-                }
-            } else {
-                alarm.pause();
-                alarm.currentTime = 0;
-            }
+            if (isAlarmNeeded && alarm.paused) alarm.play();
+            if (!isAlarmNeeded) { alarm.pause(); alarm.currentTime = 0; }
         }
 
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(renderKids, 1000);
-
-        renderKids();
+        // تحديث البيانات كل 5 ثواني
+        setInterval(fetchKids, 5000);
+        setInterval(renderKids, 1000); // تحديث التايمر المحلي
+        fetchKids();
     </script>
 </body>
 </html>
