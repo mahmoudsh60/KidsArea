@@ -60,17 +60,17 @@
         </div>
     </div>
     
-    <div id="loader">جاري الإرسال للإكسيل... ⚡</div>
+    <div id="loader">يتم الحفظ... ⚡</div>
     <div class="kids-grid" id="kidsContainer"></div>
     <button class="clear-all-btn" onclick="clearAllKids()">🗑️ مسح الكل (نهاية اليوم)</button>
     <audio id="alarmAudio" src="https://actions.google.com/sounds/v1/notifications/dainty_chime.ogg" loop preload="auto"></audio>
 
     <script>
-        // ضع الرابط الخاص بك هنا بين علامات التنصيص (تأكد إنه آخره /exec)
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec"; 
+        // 🔴 ضـــع الــرابــــط هـــنـــا 🔴
+        const WEB_APP_URL = https://script.google.com/macros/s/AKfycbySV5axC5myb1p3cYF3tTtI5DXjG0crzOe31IV0mA_aPJ3cUC3yyD6cz3sSptel3Em-og/exec; 
         
         let kids = [];
-        let notifiedKids = new Set(); // ذاكرة الدرع الواقي ضد التليجرام
+        let notifiedKids = new Set(); 
         
         async function fetchKids() {
             try {
@@ -82,13 +82,12 @@
                         if (localKid && serverKid.endTimeStamp === 0) {
                             serverKid.endTimeStamp = localKid.endTimeStamp;
                         }
-                        // لو الإكسيل قال إن التليجرام اتبعت، هنضيفه في الذاكرة المنيعة
                         if (serverKid.telegramSent) notifiedKids.add(serverKid.id);
                         return serverKid;
                     });
                     renderKids(); 
                 }
-            } catch(e) { console.log("لا يوجد اتصال بالإنترنت حالياً للتحديث"); }
+            } catch(e) { console.log("خطأ مزامنة"); }
         }
 
         function syncAction(actionData) {
@@ -99,27 +98,22 @@
 
             fetch(WEB_APP_URL, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(actionData) 
             })
-            .then(res => res.json())
-            .then(data => { 
-                loader.innerText = "تم الحفظ بنجاح ✔️";
+            .then(() => { 
+                loader.innerText = "تم الحفظ ✔️";
                 loader.style.color = "green";
                 setTimeout(() => { loader.style.display = 'none'; }, 2000); 
             })
-            .catch(err => { 
-                loader.innerText = "⚠️ خطأ! البيانات على الشاشة فقط ولم تحفظ في الإكسيل.";
+            .catch(() => { 
+                loader.innerText = "⚠️ خطأ اتصال!";
                 loader.style.color = "red";
                 setTimeout(() => { loader.style.display = 'none'; }, 4000); 
             });
         }
 
         function sendTelegramNotification(kidId, kidName) {
-            // الدرع الواقي: لو الطفل ده اتبعتله رسالة قبل كده، اخرج فوراً
             if (notifiedKids.has(kidId)) return;
-            
-            // ضيف الطفل للذاكرة عشان ميتبعتلوش تاني أبداً في الجلسة دي
             notifiedKids.add(kidId);
 
             const token = "8789464339:AAHbUcjInEu1JseNMoS3CMSYcE5WdzbBDzY";
@@ -148,9 +142,7 @@
                 endTimeFormatted: endTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
             };
 
-            // لو كان مسجل قبل كده، شيله من ذاكرة التليجرام عشان يقدر يبعتله من جديد
             notifiedKids.delete(kidId);
-
             kids.push(newKid);
             renderKids();
             syncAction({ action: 'addKid', kid: newKid });
@@ -177,7 +169,7 @@
                     kid.endTimeFormatted = newEnd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                     kid.status = newStatus;
                     kid.telegramSent = false;
-                    notifiedKids.delete(kid.id); // شيله من الذاكرة عشان يقدر يبعت تليجرام تاني لما يخلص
+                    notifiedKids.delete(kid.id); 
                 } else {
                     kid.status = newStatus; 
                 }
@@ -188,10 +180,7 @@
 
         function clearAllKids() {
             if(confirm("هل أنت متأكد من مسح جميع البيانات؟")) {
-                kids = []; 
-                notifiedKids.clear();
-                renderKids(); 
-                syncAction({ action: 'clearKids' });
+                kids = []; notifiedKids.clear(); renderKids(); syncAction({ action: 'clearKids' });
             }
         }
 
@@ -220,8 +209,6 @@
                     let timeLeft = kid.endTimeStamp - now;
                     if(timeLeft <= 0 || isNaN(timeLeft)) {
                         stateClass = 'state-danger'; timeDisplay = '❌ انتهى!'; isAlarmNeeded = true;
-                        
-                        // هنا يتم الإرسال للتليجرام إذا لم يتم الإرسال من قبل
                         if (!kid.telegramSent && !notifiedKids.has(kid.id)) {
                             kid.telegramSent = true; 
                             sendTelegramNotification(kid.id, kid.name || kid.id.split(" - ")[0]);
@@ -249,7 +236,7 @@
             else if (!isAlarmNeeded) { alarm.pause(); alarm.currentTime = 0; }
         }
 
-        setInterval(fetchKids, 8000);
+        setInterval(fetchKids, 10000);
         setInterval(renderKids, 1000); 
         fetchKids();
     </script>
